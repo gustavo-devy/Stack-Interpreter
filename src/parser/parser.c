@@ -165,6 +165,42 @@ static ASTNode *parse_pop(Parser *parser)
     return (ASTNode *)node;
 }
 
+static void *parser_add(Parser *parser)
+{
+    (void)parser;
+
+    AddNode *node = malloc(sizeof(AddNode));
+    node->base.type = NODE_ADD;
+    return (ASTNode *)node;
+}
+
+static void *parser_sub(Parser *parser)
+{
+    (void)parser;
+
+    SubNode *node = malloc(sizeof(SubNode));
+    node->base.type = NODE_SUB;
+    return (ASTNode *)node;
+}
+
+static void *parser_mul(Parser *parser)
+{
+    (void)parser;
+
+    MulNode *node = malloc(sizeof(MulNode));
+    node->base.type = NODE_MUL;
+    return (ASTNode *)node;
+}
+
+static void *parser_div(Parser *parser)
+{
+    (void)parser;
+
+    DivNode *node = malloc(sizeof(DivNode));
+    node->base.type = NODE_DIV;
+    return (ASTNode *)node;
+}
+
 static ASTNode *parser_print(Parser *parser)
 {
     (void)parser;
@@ -178,6 +214,52 @@ void parser_init(Parser *parser)
 {
     parser->position = 0;
     parser->current_token = NULL;
+}
+
+ASTNode *parser_code(Parser *parser, Lexer *lexer)
+{
+    if (parser->current_token != NULL)
+    {
+        lexer_free_token(parser->current_token);
+        parser->current_token = NULL;
+    }
+
+    parser->position = 0;
+    parser->current_token = lexer_next_token(lexer);
+
+    if (parser->current_token->type == TOKEN_END)
+    {
+        EndNode *node = malloc(sizeof(EndNode));
+        node->base.type = NODE_END;
+
+        return (ASTNode *)node;
+    }
+
+    if (parser->current_token->type == TOKEN_RESERVED_WORD)
+    {
+        switch (parser->current_token->reserved_word)
+        {
+        case RESERVED_WORD_PUSH:
+            return parse_push(parser, lexer);
+        case RESERVED_WORD_POP:
+            return parse_pop(parser);
+        case RESERVED_WORD_PRINT:
+            return parser_print(parser);
+        case RESERVED_WORD_ADD:
+            return parser_add(parser);
+        case RESERVED_WORD_SUB:
+            return parser_sub(parser);
+        case RESERVED_WORD_MUL:
+            return parser_mul(parser);
+        case RESERVED_WORD_DIV:
+            return parser_div(parser);
+        default:
+            printf("Erro: palavra reservada desconhecida.\n");
+            return NULL;
+        }
+    }
+
+    return parse_expression(parser, lexer, PREC_NONE);
 }
 
 void parser_free_ast(ASTNode *node)
@@ -214,42 +296,4 @@ void parser_free_ast(ASTNode *node)
     }
 
     free(node);
-}
-
-ASTNode *parser_code(Parser *parser, Lexer *lexer)
-{
-    if (parser->current_token != NULL)
-    {
-        lexer_free_token(parser->current_token);
-        parser->current_token = NULL;
-    }
-
-    parser->position = 0;
-    parser->current_token = lexer_next_token(lexer);
-
-    if (parser->current_token->type == TOKEN_END)
-    {
-        EndNode *node = malloc(sizeof(EndNode));
-        node->base.type = NODE_END;
-
-        return (ASTNode *)node;
-    }
-
-    if (parser->current_token->type == TOKEN_RESERVED_WORD)
-    {
-        switch (parser->current_token->reserved_word)
-        {
-        case RESERVED_WORD_PUSH:
-            return parse_push(parser, lexer);
-        case RESERVED_WORD_POP:
-            return parse_pop(parser);
-        case RESERVED_WORD_PRINT:
-            return parser_print(parser);
-        default:
-            printf("Erro: palavra reservada desconhecida.\n");
-            return NULL;
-        }
-    }
-
-    return parse_expression(parser, lexer, PREC_NONE);
 }

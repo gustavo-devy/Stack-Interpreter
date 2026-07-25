@@ -96,6 +96,30 @@ void compile(ASTNode *node, Chunk *chunk)
         break;
     }
 
+    case NODE_ADD:
+    {
+        emit_byte(chunk, OP_ADD_CMD);
+        break;
+    }
+
+    case NODE_SUB:
+    {
+        emit_byte(chunk, OP_SUB_CMD);
+        break;
+    }
+
+    case NODE_MUL:
+    {
+        emit_byte(chunk, OP_MUL_CMD);
+        break;
+    }
+
+    case NODE_DIV:
+    {
+        emit_byte(chunk, OP_DIV_CMD);
+        break;
+    }
+
     case NODE_PRINT:
     {
         emit_byte(chunk, OP_PRINT_CMD);

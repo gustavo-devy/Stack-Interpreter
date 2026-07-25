@@ -15,6 +15,10 @@ typedef enum
     OP_DIVISION,
     OP_PUSH_CMD,
     OP_POP_CMD,
+    OP_ADD_CMD,
+    OP_SUB_CMD,
+    OP_MUL_CMD,
+    OP_DIV_CMD,
     OP_PRINT_CMD,
     OP_HALT
 } OpCode;

@@ -56,6 +56,70 @@ void run_vm(VM *vm)
             break;
         }
 
+        case OP_ADD_CMD:
+        {
+            if (vm->stack_top - vm->stack < 2)
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            vm->stack_top--;
+            int right = *vm->stack_top;
+            vm->stack_top--;
+            int left = *vm->stack_top;
+            *vm->stack_top++ = left + right;
+            break;
+        }
+
+        case OP_SUB_CMD:
+        {
+            if (vm->stack_top - vm->stack < 2)
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            vm->stack_top--;
+            int right = *vm->stack_top;
+            vm->stack_top--;
+            int left = *vm->stack_top;
+            *vm->stack_top++ = left - right;
+            break;
+        }
+
+        case OP_MUL_CMD:
+        {
+            if (vm->stack_top - vm->stack < 2)
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            vm->stack_top--;
+            int right = *vm->stack_top;
+            vm->stack_top--;
+            int left = *vm->stack_top;
+            *vm->stack_top++ = left * right;
+            break;
+        }
+
+        case OP_DIV_CMD:
+        {
+            if (vm->stack_top - vm->stack < 2)
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            vm->stack_top--;
+            int right = *vm->stack_top;
+            vm->stack_top--;
+            int left = *vm->stack_top;
+            *vm->stack_top++ = left / right;
+            break;
+        }
+
         case OP_PRINT_CMD:
         {
             printf("%d\n",

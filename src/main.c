@@ -7,7 +7,7 @@
 #include "compile/compile.h"
 #include "vm/vm.h"
 
-char *ops[10] = {
+char *ops[14] = {
     "OP_CONSTANT",
     "OP_GET_VAR",
     "OP_ADD",
@@ -16,6 +16,10 @@ char *ops[10] = {
     "OP_DIVISION",
     "OP_PUSH_CMD",
     "OP_POP_CMD",
+    "OP_ADD_CMD",
+    "OP_SUB_CMD",
+    "OP_MUL_CMD",
+    "OP_DIV_CMD",
     "OP_PRINT_CMD",
     "OP_HALT" //
 };

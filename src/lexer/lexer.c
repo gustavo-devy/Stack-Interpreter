@@ -54,6 +54,34 @@ static Token *lexer_get_identifier(Lexer *lexer)
 
         return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
     }
+    else if (strcmp(identifier, "add") == 0)
+    {
+        reserved_word = RESERVED_WORD_ADD;
+        is_reserved_word = 1;
+
+        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
+    }
+    else if (strcmp(identifier, "sub") == 0)
+    {
+        reserved_word = RESERVED_WORD_SUB;
+        is_reserved_word = 1;
+
+        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
+    }
+    else if (strcmp(identifier, "mul") == 0)
+    {
+        reserved_word = RESERVED_WORD_MUL;
+        is_reserved_word = 1;
+
+        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
+    }
+    else if (strcmp(identifier, "div") == 0)
+    {
+        reserved_word = RESERVED_WORD_DIV;
+        is_reserved_word = 1;
+
+        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
+    }
     else if (strcmp(identifier, "print") == 0)
     {
         reserved_word = RESERVED_WORD_PRINT;

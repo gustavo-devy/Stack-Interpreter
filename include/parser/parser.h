@@ -11,6 +11,10 @@ typedef enum NodeType
     NODE_POP,
     NODE_NUMBER,
     NODE_OP,
+    NODE_ADD,
+    NODE_SUB,
+    NODE_MUL,
+    NODE_DIV,
     NODE_PRINT,
     NODE_END
 } NodeType;
@@ -55,6 +59,26 @@ typedef struct PrintNode
 {
     ASTNode base;
 } PrintNode;
+
+typedef struct AddNode
+{
+    ASTNode base;
+} AddNode;
+
+typedef struct SubNode
+{
+    ASTNode base;
+} SubNode;
+
+typedef struct MulNode
+{
+    ASTNode base;
+} MulNode;
+
+typedef struct DivNode
+{
+    ASTNode base;
+} DivNode;
 
 typedef struct Parser
 {
