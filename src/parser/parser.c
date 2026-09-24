@@ -201,6 +201,15 @@ static void *parser_div(Parser *parser)
     return (ASTNode *)node;
 }
 
+static void *parser_mod(Parser *parser)
+{
+    (void)parser;
+
+    ModNode *node = malloc(sizeof(ModNode));
+    node->base.type = NODE_MOD;
+    return (ASTNode *)node;
+}
+
 static ASTNode *parser_print(Parser *parser)
 {
     (void)parser;
@@ -253,6 +262,8 @@ ASTNode *parser_code(Parser *parser, Lexer *lexer)
             return parser_mul(parser);
         case RESERVED_WORD_DIV:
             return parser_div(parser);
+        case RESERVED_WORD_MOD:
+            return parser_mod(parser);
         default:
             printf("Erro: palavra reservada desconhecida.\n");
             return NULL;

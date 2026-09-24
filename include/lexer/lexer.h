@@ -30,6 +30,7 @@ typedef enum ReservedWord
     RESERVED_WORD_SUB,
     RESERVED_WORD_MUL,
     RESERVED_WORD_DIV,
+    RESERVED_WORD_MOD,
     RESERVED_WORD_PRINT,
 } ReservedWord;
 

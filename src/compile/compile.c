@@ -120,6 +120,12 @@ void compile(ASTNode *node, Chunk *chunk)
         break;
     }
 
+    case NODE_MOD:
+    {
+        emit_byte(chunk, OP_MOD_CMD);
+        break;
+    }
+
     case NODE_PRINT:
     {
         emit_byte(chunk, OP_PRINT_CMD);

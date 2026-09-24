@@ -15,6 +15,7 @@ typedef enum NodeType
     NODE_SUB,
     NODE_MUL,
     NODE_DIV,
+    NODE_MOD,
     NODE_PRINT,
     NODE_END
 } NodeType;
@@ -79,6 +80,11 @@ typedef struct DivNode
 {
     ASTNode base;
 } DivNode;
+
+typedef struct ModNode
+{
+    ASTNode base;
+} ModNode;
 
 typedef struct Parser
 {

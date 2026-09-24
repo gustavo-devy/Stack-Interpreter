@@ -19,6 +19,7 @@ typedef enum
     OP_SUB_CMD,
     OP_MUL_CMD,
     OP_DIV_CMD,
+    OP_MOD_CMD,
     OP_PRINT_CMD,
     OP_HALT
 } OpCode;

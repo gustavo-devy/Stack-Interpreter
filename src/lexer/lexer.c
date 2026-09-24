@@ -82,6 +82,13 @@ static Token *lexer_get_identifier(Lexer *lexer)
 
         return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
     }
+    else if (strcmp(identifier, "mod") == 0)
+    {
+        reserved_word = RESERVED_WORD_MOD;
+        is_reserved_word = 1;
+
+        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
+    }
     else if (strcmp(identifier, "print") == 0)
     {
         reserved_word = RESERVED_WORD_PRINT;

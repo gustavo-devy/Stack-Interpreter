@@ -7,7 +7,7 @@
 #include "compile/compile.h"
 #include "vm/vm.h"
 
-char *ops[14] = {
+char *ops[15] = {
     "OP_CONSTANT",
     "OP_GET_VAR",
     "OP_ADD",
@@ -20,9 +20,24 @@ char *ops[14] = {
     "OP_SUB_CMD",
     "OP_MUL_CMD",
     "OP_DIV_CMD",
+    "OP_MOD_CMD",
     "OP_PRINT_CMD",
     "OP_HALT" //
 };
+
+void debug(Chunk chunk)
+{
+    for (int i = 0; i < chunk.count; i++)
+    {
+        OpCode op = chunk.code[i];
+        if (op == OP_CONSTANT)
+        {
+            i++;
+        }
+        printf("%s\n", ops[(int)op]);
+    }
+    printf("\n");
+}
 
 int main(int argc, char const *argv[])
 {
@@ -34,7 +49,10 @@ int main(int argc, char const *argv[])
 
     char *input = read_file(argv[1]);
     if (input == NULL)
+    {
+        fprintf(stderr, "Erro ao ler o arquivo: %s\n", argv[1]);
         return EXIT_FAILURE;
+    }
 
     Lexer lexer;
     lexer_init(&lexer, input);
@@ -77,17 +95,6 @@ int main(int argc, char const *argv[])
     {
         compile(program[i], &chunk);
     }
-
-    for (int i = 0; i < chunk.count; i++)
-    {
-        OpCode op = chunk.code[i];
-        if (op == OP_CONSTANT)
-        {
-            i++;
-        }
-        printf("%s\n", ops[(int)op]);
-    }
-    printf("\n");
 
     VM vm;
     vm_init(&vm, &chunk);
