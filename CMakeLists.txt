@@ -11,7 +11,6 @@ set(SOURCE_FILES src/main.c
     src/parser/parser.c
     src/compile/compile.c
     src/vm/vm.c
-    src/vm/stack.c
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})

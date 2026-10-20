@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 #include "parser/parser.h"
-#include "vm/stack.h"
 
 typedef enum OpCode
 {
@@ -36,12 +35,6 @@ typedef struct Chunk
     int constant_count;
     int constant_capacity;
 } Chunk;
-
-typedef struct BlockFrame
-{
-    Stack *local_stack;
-    struct BlockFrame *parent;
-} BlockFrame;
 
 void chunk_init(Chunk *chunk);
 void compile(ASTNode *node, Chunk *chunk);

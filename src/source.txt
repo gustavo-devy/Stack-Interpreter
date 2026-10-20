@@ -1,2 +1,2 @@
-push 10 + 2 * 4
+push 10
 print

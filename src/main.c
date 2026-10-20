@@ -96,6 +96,8 @@ int main(int argc, char const *argv[])
         compile(program[i], &chunk);
     }
 
+    debug(chunk);
+
     VM vm;
     vm_init(&vm, &chunk);
     run_vm(&vm);
