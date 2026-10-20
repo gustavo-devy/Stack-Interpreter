@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "vm/vm.h"
 
@@ -9,33 +10,35 @@ void vm_init(VM *vm, Chunk *chunk)
 {
     vm->chunk = chunk;
     vm->ip = chunk->code;
-    vm->stack_top = vm->stack;
+    vm->current_frame = NULL;
+    vm->global_stack = stack_create(DEFAULT_STACK_SIZE);
 }
 
 void run_vm(VM *vm)
 {
     for (;;)
     {
-        unsigned char instruction = READ_BYTE();
+        u_char instruction = READ_BYTE();
 
         switch (instruction)
         {
         case OP_CONSTANT:
         {
-            int value = READ_CONSTANT();
-            if (vm->stack_top - vm->stack >= STACK_MAX)
+            int32_t value = READ_CONSTANT();
+            if (vm->global_stack->top >= vm->global_stack->capacity)
             {
                 fprintf(stderr, "Stack overflow.\n");
                 return;
             }
 
-            *vm->stack_top++ = value;
+            vm->global_stack->data[vm->global_stack->top++] = value;
+
             break;
         }
 
         case OP_PUSH_CMD:
         {
-            if (vm->stack_top == vm->stack)
+            if (vm->global_stack->top == 0)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
@@ -46,164 +49,179 @@ void run_vm(VM *vm)
 
         case OP_POP_CMD:
         {
-            if (vm->stack_top == vm->stack)
+            if (vm->global_stack->top == 0)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
+            vm->global_stack->top--;
+
             break;
         }
 
         case OP_ADD_CMD:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left + right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left + right;
+
             break;
         }
 
         case OP_SUB_CMD:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left - right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left - right;
+
             break;
         }
 
         case OP_MUL_CMD:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left * right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left * right;
+
             break;
         }
 
         case OP_DIV_CMD:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left / right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left / right;
+
             break;
         }
 
         case OP_MOD_CMD:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left % right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left % right;
+
             break;
         }
 
         case OP_PRINT_CMD:
         {
-            printf("%d\n",
-                   *(vm->stack_top - 1));
+            if (vm->global_stack->top == 0)
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            printf("%" PRId32 "\n", vm->global_stack->data[vm->global_stack->top - 1]);
             break;
         }
 
         case OP_ADD:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left + right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left + right;
+
             break;
         }
 
         case OP_SUBTRACT:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left - right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left - right;
+
             break;
         }
 
         case OP_MULTIPLICATION:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left * right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left * right;
+
             break;
         }
 
         case OP_DIVISION:
         {
-            if (vm->stack_top - vm->stack < 2)
+            if (vm->global_stack->top < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
                 return;
             }
 
-            vm->stack_top--;
-            int right = *vm->stack_top;
-            vm->stack_top--;
-            int left = *vm->stack_top;
-            *vm->stack_top++ = left / right;
+            vm->global_stack->top--;
+            uint32_t right = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->top--;
+            uint32_t left = vm->global_stack->data[vm->global_stack->top];
+            vm->global_stack->data[vm->global_stack->top++] = left / right;
+
             break;
         }
 
@@ -214,7 +232,7 @@ void run_vm(VM *vm)
 
         default:
         {
-            fprintf(stderr, "Instrução desconhecida: %d\n", instruction);
+            fprintf(stderr, "Unknown instruction: %d\n", instruction);
             return;
         }
         }

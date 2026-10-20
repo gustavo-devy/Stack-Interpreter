@@ -1,17 +1,18 @@
 #ifndef VM_H
 #define VM_H
 
-#define STACK_MAX 256
+#include <stdint.h>
 
 #include "compile/compile.h"
+#include "vm/stack.h"
 
-typedef struct
+typedef struct VM
 {
     Chunk *chunk;
-    unsigned char *ip;
+    u_char *ip;
 
-    int stack[STACK_MAX];
-    int *stack_top;
+    Stack *global_stack;
+    BlockFrame *current_frame;
 } VM;
 
 void vm_init(VM *vm, Chunk *chunk);

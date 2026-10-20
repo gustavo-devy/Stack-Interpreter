@@ -3,9 +3,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "parser/parser.h"
+#include <stdint.h>
 
-typedef enum
+#include "parser/parser.h"
+#include "vm/stack.h"
+
+typedef enum OpCode
 {
     OP_CONSTANT,
     OP_GET_VAR,
@@ -24,15 +27,21 @@ typedef enum
     OP_HALT
 } OpCode;
 
-typedef struct
+typedef struct Chunk
 {
-    unsigned char *code;
+    u_char *code;
     int count;
     int capacity;
     int *constants;
     int constant_count;
     int constant_capacity;
 } Chunk;
+
+typedef struct BlockFrame
+{
+    Stack *local_stack;
+    struct BlockFrame *parent;
+} BlockFrame;
 
 void chunk_init(Chunk *chunk);
 void compile(ASTNode *node, Chunk *chunk);
