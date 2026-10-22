@@ -1,8 +1,10 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+
 #include "lexer/lexer.h"
 
 typedef enum NodeType
@@ -17,6 +19,9 @@ typedef enum NodeType
     NODE_DIV,
     NODE_MOD,
     NODE_PRINT,
+    NODE_FUNCTION,
+    NODE_BLOCK,
+    NODE_CALL_FUNCTION,
     NODE_END
 } NodeType;
 
@@ -85,6 +90,38 @@ typedef struct ModNode
 {
     ASTNode base;
 } ModNode;
+
+typedef struct BlockNode
+{
+    ASTNode base;
+    ASTNode **statements;
+    size_t statement_count;
+    size_t statement_capacity;
+} BlockNode;
+
+// typedef struct FunctionParameter
+// {
+//     uint32_t value;
+// } FunctionParameter;
+
+typedef struct FunctionNode
+{
+    ASTNode base;
+    char *name;
+    char **params;
+    size_t parameter_capacity;
+    size_t parameter_count;
+    BlockNode *body;
+} FunctionNode;
+
+typedef struct CallFunctionNode
+{
+    ASTNode base;
+    char *name;
+    ASTNode **arguments;
+    size_t argument_count;
+    size_t argument_capacity;
+} CallFunctionNode;
 
 typedef struct Parser
 {

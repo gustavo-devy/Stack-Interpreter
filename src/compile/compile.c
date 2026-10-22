@@ -31,13 +31,81 @@ void chunk_init(Chunk *chunk)
     chunk->constant_capacity = 256;
 }
 
-void compile(ASTNode *node, Chunk *chunk)
+void compile_init(Compiler *compiler, Chunk *main)
+{
+    compiler->main = main;
+    compiler->functions = malloc(sizeof(FunctionSymbol) * 32);
+    compiler->function_count = 0;
+    compiler->function_capacity = 32;
+}
+
+void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
 {
     if (node == NULL)
         return;
 
     switch (node->type)
     {
+
+    case NODE_FUNCTION:
+    {
+        FunctionNode *function_node = (FunctionNode *)node;
+        FunctionSymbol *function_symbol = malloc(sizeof(FunctionSymbol));
+
+        function_symbol->name = malloc(sizeof(char) * (strlen(function_node->name) + 1));
+        strcpy(function_symbol->name, function_node->name);
+
+        function_symbol->chunk = malloc(sizeof(Chunk));
+        chunk_init(function_symbol->chunk);
+
+        function_symbol->parameter_count = function_node->parameter_count;
+
+        for (size_t i = 0; i < function_node->body->statement_count; i++)
+        {
+            compile(compiler, function_node->body->statements[i], function_symbol->chunk);
+        }
+
+        compiler->functions[compiler->function_count++] = function_symbol;
+        emit_byte(function_symbol->chunk, OP_RETURN);
+        break;
+    }
+
+    case NODE_CALL_FUNCTION:
+    {
+        CallFunctionNode *call_node = (CallFunctionNode *)node;
+        size_t function_index = 0;
+
+        while (function_index < compiler->function_count &&
+               strcmp(compiler->functions[function_index]->name,
+                      call_node->name) != 0)
+        {
+            function_index++;
+        }
+
+        if (function_index == compiler->function_count)
+        {
+            fprintf(stderr, "Função '%s' não declarada.\n", call_node->name);
+            break;
+        }
+
+        FunctionSymbol *function = compiler->functions[function_index];
+
+        if (call_node->argument_count != function->parameter_count)
+        {
+            fprintf(stderr, "Quantidade incorreta de argumentos para '%s'.\n",
+                    call_node->name);
+            break;
+        }
+
+        for (size_t i = 0; i < call_node->argument_count; i++)
+        {
+            compile(compiler, call_node->arguments[i], chunk);
+        }
+
+        emit_byte(chunk, OP_CALL_FUNCTION);
+        emit_byte(chunk, (unsigned char)function_index);
+        break;
+    }
 
     case NODE_NUMBER:
     {
@@ -53,8 +121,8 @@ void compile(ASTNode *node, Chunk *chunk)
     {
         OpNode *o = (OpNode *)node;
 
-        compile(o->left, chunk);
-        compile(o->right, chunk);
+        compile(compiler, o->left, chunk);
+        compile(compiler, o->right, chunk);
 
         if (o->op == '+')
         {
@@ -85,7 +153,7 @@ void compile(ASTNode *node, Chunk *chunk)
             break;
         }
 
-        compile(p->expression, chunk);
+        compile(compiler, p->expression, chunk);
         emit_byte(chunk, OP_PUSH_CMD);
         break;
     }

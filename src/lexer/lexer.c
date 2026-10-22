@@ -96,6 +96,20 @@ static Token *lexer_get_identifier(Lexer *lexer)
 
         return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
     }
+    else if (strcmp(identifier, "func") == 0)
+    {
+        reserved_word = RESERVED_WORD_FUNC;
+        is_reserved_word = 1;
+
+        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
+    }
+    else if (strcmp(identifier, "call") == 0)
+    {
+        reserved_word = RESERVED_WORD_CALL_FUNC;
+        is_reserved_word = 1;
+
+        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word, is_reserved_word);
+    }
 
     return lexer_create_token(TOKEN_IDENTIFIER, identifier, reserved_word, is_reserved_word);
 }
@@ -173,6 +187,21 @@ Token *lexer_next_token(Lexer *lexer)
         case ')':
             lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_RIGHT_PAREN, ')');
+        case '<':
+            lexer_advance(lexer);
+            return lexer_create_char_token(lexer, TOKEN_LEFT_ANGLE, '<');
+        case '>':
+            lexer_advance(lexer);
+            return lexer_create_char_token(lexer, TOKEN_RIGHT_ANGLE, '>');
+        case '{':
+            lexer_advance(lexer);
+            return lexer_create_char_token(lexer, TOKEN_LEFT_BRACE, '{');
+        case '}':
+            lexer_advance(lexer);
+            return lexer_create_char_token(lexer, TOKEN_RIGHT_BRACE, '}');
+        case ',':
+            lexer_advance(lexer);
+            return lexer_create_char_token(lexer, TOKEN_SEPARATOR, ',');
         default:
             fprintf(stderr, "Unknown character: %c\n", lexer->current_char);
             exit(EXIT_FAILURE);

@@ -23,12 +23,14 @@ typedef enum OpCode
     OP_DIV_CMD,
     OP_MOD_CMD,
     OP_PRINT_CMD,
+    OP_CALL_FUNCTION,
+    OP_RETURN,
     OP_HALT
 } OpCode;
 
 typedef struct Chunk
 {
-    u_char *code;
+    unsigned char *code;
     int count;
     int capacity;
     int *constants;
@@ -36,7 +38,23 @@ typedef struct Chunk
     int constant_capacity;
 } Chunk;
 
+typedef struct FunctionSymbol
+{
+    char *name;
+    Chunk *chunk;
+    size_t parameter_count;
+} FunctionSymbol;
+
+typedef struct Compiler
+{
+    Chunk *main;
+    FunctionSymbol **functions;
+    size_t function_count;
+    size_t function_capacity;
+} Compiler;
+
 void chunk_init(Chunk *chunk);
-void compile(ASTNode *node, Chunk *chunk);
+void compile_init(Compiler *compiler, Chunk *main);
+void compile(Compiler *compiler, ASTNode *node, Chunk *chunk);
 
 #endif // COMPILE_H

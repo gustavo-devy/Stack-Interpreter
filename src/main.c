@@ -91,15 +91,18 @@ int main(int argc, char const *argv[])
     Chunk chunk;
     chunk_init(&chunk);
 
+    Compiler compiler;
+    compile_init(&compiler, &chunk);
+
     for (size_t i = 0; i < program_count; i++)
     {
-        compile(program[i], &chunk);
+        compile(&compiler, program[i], &chunk);
     }
 
-    debug(chunk);
+    // debug(chunk);
 
     VM vm;
-    vm_init(&vm, &chunk);
+    vm_init(&vm, &chunk, &compiler);
     run_vm(&vm);
 
     free(chunk.code);

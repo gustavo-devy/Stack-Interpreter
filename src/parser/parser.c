@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include "parser/parser.h"
 
 typedef enum Precedence
@@ -219,6 +216,184 @@ static ASTNode *parser_print(Parser *parser)
     return (ASTNode *)node;
 }
 
+static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
+{
+    parser_advance_token(parser, lexer);
+    if (parser->current_token->type != TOKEN_IDENTIFIER)
+    {
+        printf("Esperava o nome da função após 'call'\n");
+        exit(0);
+    }
+
+    CallFunctionNode *node = malloc(sizeof(CallFunctionNode));
+    node->base.type = NODE_CALL_FUNCTION;
+    node->name = malloc(sizeof(char) * 8);
+    strcpy(node->name, parser->current_token->value);
+    node->argument_count = 0;
+    node->argument_capacity = 8;
+    node->arguments = malloc(sizeof(ASTNode *) * 8);
+
+    parser_advance_token(parser, lexer);
+
+    if (parser->current_token->type != TOKEN_LEFT_ANGLE)
+    {
+        printf("Esperava '<'\n");
+        exit(0);
+    }
+    parser_advance_token(parser, lexer);
+
+    while (parser->current_token->type != TOKEN_RIGHT_ANGLE)
+    {
+        ASTNode *argument_node = parse_expression(parser, lexer, PREC_NONE);
+        if (argument_node == NULL)
+        {
+            printf("Argumento inválido na chamada da função '%s'", node->name);
+            exit(0);
+        }
+        node->arguments[node->argument_count++] = argument_node;
+
+        parser_advance_token(parser, lexer);
+        if (parser->current_token->type == TOKEN_RIGHT_ANGLE)
+            break;
+
+        if (parser->current_token->type == TOKEN_SEPARATOR)
+        {
+            parser_advance_token(parser, lexer);
+            if (parser->current_token->type == TOKEN_RIGHT_ANGLE)
+            {
+                printf("Expressão inválida após ',' na chamada da função '%s'", node->name);
+                exit(0);
+            }
+
+            continue;
+        }
+
+        printf("Erro na chamada da função '%s'", node->name);
+        exit(0);
+    }
+
+    return (ASTNode *)node;
+}
+
+static ASTNode *parse_function(Parser *parser, Lexer *lexer);
+
+static ASTNode *parse_statement(Parser *parser, Lexer *lexer)
+{
+    if (parser->current_token->type == TOKEN_RESERVED_WORD)
+    {
+        switch (parser->current_token->reserved_word)
+        {
+        case RESERVED_WORD_PUSH:
+            return parse_push(parser, lexer);
+        case RESERVED_WORD_POP:
+            return parse_pop(parser);
+        case RESERVED_WORD_PRINT:
+            return parser_print(parser);
+        case RESERVED_WORD_ADD:
+            return parser_add(parser);
+        case RESERVED_WORD_SUB:
+            return parser_sub(parser);
+        case RESERVED_WORD_MUL:
+            return parser_mul(parser);
+        case RESERVED_WORD_DIV:
+            return parser_div(parser);
+        case RESERVED_WORD_MOD:
+            return parser_mod(parser);
+        case RESERVED_WORD_FUNC:
+            return parse_function(parser, lexer);
+        case RESERVED_WORD_CALL_FUNC:
+            return parse_call_function(parser, lexer);
+        default:
+            printf("Erro: palavra reservada desconhecida.\n");
+            exit(0);
+            return NULL;
+        }
+    }
+
+    return parse_expression(parser, lexer, PREC_NONE);
+}
+
+static ASTNode *parse_function(Parser *parser, Lexer *lexer)
+{
+    FunctionNode *node = malloc(sizeof(FunctionNode));
+    node->base.type = NODE_FUNCTION;
+    node->name = malloc(sizeof(char) * 32);
+    node->params = malloc(sizeof(char *) * 8);
+    node->parameter_count = 0;
+    node->parameter_capacity = 8;
+
+    BlockNode *block = malloc(sizeof(BlockNode));
+    block->base.type = NODE_BLOCK;
+    block->statement_capacity = 255;
+    block->statement_count = 0;
+    block->statements = malloc(sizeof(ASTNode *) * 255);
+    node->body = block;
+
+    parser_advance_token(parser, lexer);
+    if (parser->current_token->type != TOKEN_IDENTIFIER)
+    {
+        printf("Esperava o nome da função após 'func'\n");
+        exit(0);
+    }
+    strcpy(node->name, parser->current_token->value);
+
+    parser_advance_token(parser, lexer);
+    if (parser->current_token->type != TOKEN_LEFT_ANGLE)
+    {
+        printf("Esperava '<'\n");
+        exit(0);
+    }
+
+    parser_advance_token(parser, lexer);
+    while (parser->current_token->type != TOKEN_RIGHT_ANGLE)
+    {
+        if (parser->current_token->type == TOKEN_SEPARATOR)
+        {
+            parser_advance_token(parser, lexer);
+            continue;
+        }
+
+        if (parser->current_token->type != TOKEN_IDENTIFIER)
+        {
+            printf("Esperava um parametro logo após ','\n");
+            exit(0);
+        }
+        size_t length = strlen(parser->current_token->value);
+        char *name = malloc(length + 1);
+        strcpy(name, parser->current_token->value);
+        node->params[node->parameter_count++] = name;
+
+        parser_advance_token(parser, lexer);
+    }
+    parser_advance_token(parser, lexer);
+
+    if (parser->current_token->type != TOKEN_LEFT_BRACE)
+    {
+        printf("Esperava um inicio de bloco logo após a função\n");
+        exit(0);
+    }
+    parser_advance_token(parser, lexer);
+
+    while (parser->current_token->type != TOKEN_RIGHT_BRACE)
+    {
+        if (parser->current_token->type == TOKEN_END)
+        {
+            printf("Erro: bloco de função não foi fechado.\n");
+            return NULL;
+        }
+
+        ASTNode *statement = parse_statement(parser, lexer);
+        if (statement == NULL)
+            return NULL;
+
+        node->body->statements[node->body->statement_count++] = statement;
+
+        parser_advance_token(parser, lexer);
+    }
+
+    return (ASTNode *)node;
+}
+
 void parser_init(Parser *parser)
 {
     parser->position = 0;
@@ -244,30 +419,10 @@ ASTNode *parser_code(Parser *parser, Lexer *lexer)
         return (ASTNode *)node;
     }
 
-    if (parser->current_token->type == TOKEN_RESERVED_WORD)
+    ASTNode *node = parse_statement(parser, lexer);
+    if (node != NULL)
     {
-        switch (parser->current_token->reserved_word)
-        {
-        case RESERVED_WORD_PUSH:
-            return parse_push(parser, lexer);
-        case RESERVED_WORD_POP:
-            return parse_pop(parser);
-        case RESERVED_WORD_PRINT:
-            return parser_print(parser);
-        case RESERVED_WORD_ADD:
-            return parser_add(parser);
-        case RESERVED_WORD_SUB:
-            return parser_sub(parser);
-        case RESERVED_WORD_MUL:
-            return parser_mul(parser);
-        case RESERVED_WORD_DIV:
-            return parser_div(parser);
-        case RESERVED_WORD_MOD:
-            return parser_mod(parser);
-        default:
-            printf("Erro: palavra reservada desconhecida.\n");
-            return NULL;
-        }
+        return node;
     }
 
     return parse_expression(parser, lexer, PREC_NONE);

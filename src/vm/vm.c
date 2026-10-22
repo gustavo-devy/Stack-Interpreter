@@ -5,13 +5,14 @@
 #define READ_BYTE() (*vm->ip++)
 #define READ_CONSTANT() (vm->chunk->constants[READ_BYTE()])
 
-void vm_init(VM *vm, Chunk *chunk)
+void vm_init(VM *vm, Chunk *chunk, Compiler *compiler)
 {
+    vm->compiler = compiler;
     vm->chunk = chunk;
     vm->ip = chunk->code;
     vm->sp = 0;
-    vm->frames[0] = 0;
-    vm->fp = 0;
+    memset(&vm->frames, 0, FRAMES_MAX);
+    vm->frame_count = 0;
 }
 
 void run_vm(VM *vm)
@@ -33,6 +34,32 @@ void run_vm(VM *vm)
 
             vm->stack[vm->sp++] = value;
 
+            break;
+        }
+
+        case OP_CALL_FUNCTION:
+        {
+            unsigned char function_index = READ_BYTE();
+            FunctionSymbol *function = vm->compiler->functions[function_index];
+
+            vm->frames[vm->frame_count++] = (CallFrame){
+                .chunk = vm->chunk,
+                .ip = vm->ip //
+            };
+
+            vm->chunk = function->chunk;
+            vm->ip = function->chunk->code;
+            break;
+        }
+
+        case OP_RETURN:
+        {
+            if (vm->frame_count == 0)
+                return;
+
+            CallFrame frame = vm->frames[--vm->frame_count];
+            vm->chunk = frame.chunk;
+            vm->ip = frame.ip;
             break;
         }
 
@@ -233,7 +260,7 @@ void run_vm(VM *vm)
         default:
         {
             fprintf(stderr, "Unknown instruction: %d\n", instruction);
-            return;
+            exit(0);
         }
         }
     }
