@@ -1,16 +1,9 @@
 func mostra <a>
 {
+    push 10
     push a
-    print
-}
-
-func soma<a, b>
-{
-    push a
-    push b
-    add
+    pop
     print
 }
 
 call mostra<42>
-call soma<1, 1>

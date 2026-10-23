@@ -117,8 +117,22 @@ void run_vm(VM *vm)
                 return;
             }
 
-            vm->sp--;
+            uint32_t stack_floor = 0;
 
+            if (vm->frame_count > 0)
+            {
+                CallFrame *frame = &vm->frames[vm->frame_count - 1];
+                stack_floor = frame->stack_base + frame->parameter_count;
+            }
+
+            if (vm->sp <= stack_floor)
+            {
+                fprintf(stderr, "Stack underflow: não é possível remover parâmetros.\n");
+                exit(0);
+                return;
+            }
+
+            vm->sp--;
             break;
         }
 
