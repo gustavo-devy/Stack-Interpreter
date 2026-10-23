@@ -1,9 +1,9 @@
-func mostra <a>
+func mostra <a, b>
 {
-    push 10
     push a
-    pop
+    push b
+    add
     print
 }
 
-call mostra<42>
+call mostra<42, 8>

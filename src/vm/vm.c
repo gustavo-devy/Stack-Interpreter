@@ -5,6 +5,20 @@
 #define READ_BYTE() (*vm->ip++)
 #define READ_CONSTANT() (vm->chunk->constants[READ_BYTE()])
 
+static int has_stack_values(const VM *vm, size_t count)
+{
+    size_t floor = 0;
+
+    if (vm->frame_count > 0)
+    {
+        const CallFrame *frame = &vm->frames[vm->frame_count - 1];
+        floor = (size_t)frame->stack_base + frame->parameter_count;
+    }
+
+    return (size_t)vm->sp >= floor &&
+           (size_t)vm->sp - floor >= count;
+}
+
 void vm_init(VM *vm, Chunk *chunk, Compiler *compiler)
 {
     vm->compiler = compiler;
@@ -144,6 +158,13 @@ void run_vm(VM *vm)
                 return;
             }
 
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
+                return;
+            }
+
             vm->sp--;
             uint32_t right = vm->stack[vm->sp];
             vm->sp--;
@@ -158,6 +179,13 @@ void run_vm(VM *vm)
             if (vm->sp == 0)
             {
                 fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
                 return;
             }
 
@@ -178,6 +206,13 @@ void run_vm(VM *vm)
                 return;
             }
 
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
+                return;
+            }
+
             vm->sp--;
             uint32_t right = vm->stack[vm->sp];
             vm->sp--;
@@ -192,6 +227,13 @@ void run_vm(VM *vm)
             if (vm->sp < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
                 return;
             }
 
@@ -212,6 +254,13 @@ void run_vm(VM *vm)
                 return;
             }
 
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
+                return;
+            }
+
             vm->sp--;
             uint32_t right = vm->stack[vm->sp];
             vm->sp--;
@@ -229,6 +278,13 @@ void run_vm(VM *vm)
                 return;
             }
 
+            if (!has_stack_values(vm, 1))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
+                return;
+            }
+
             printf("%d\n", vm->stack[vm->sp - 1]);
             break;
         }
@@ -238,6 +294,13 @@ void run_vm(VM *vm)
             if (vm->sp < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
                 return;
             }
 
@@ -258,6 +321,13 @@ void run_vm(VM *vm)
                 return;
             }
 
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
+                return;
+            }
+
             vm->sp--;
             uint32_t right = vm->stack[vm->sp];
             vm->sp--;
@@ -275,6 +345,13 @@ void run_vm(VM *vm)
                 return;
             }
 
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
+                return;
+            }
+
             vm->sp--;
             uint32_t right = vm->stack[vm->sp];
             vm->sp--;
@@ -289,6 +366,13 @@ void run_vm(VM *vm)
             if (vm->sp < 2)
             {
                 fprintf(stderr, "Stack underflow.\n");
+                return;
+            }
+
+            if (!has_stack_values(vm, 2))
+            {
+                fprintf(stderr, "Stack underflow.\n");
+                exit(0);
                 return;
             }
 
