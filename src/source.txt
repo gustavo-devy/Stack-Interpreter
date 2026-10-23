@@ -1,18 +1,16 @@
-func soma <a, b>
+func mostra <a>
 {
-    push 20
-    push 2
+    push a
+    print
+}
+
+func soma<a, b>
+{
+    push a
+    push b
     add
     print
 }
 
-func test<c, d>
-{
-    push 2
-    push 4
-    mul
-    print
-}
-
-call test<1, 2>
-call soma<1, 2>
+call mostra<42>
+call soma<1, 1>

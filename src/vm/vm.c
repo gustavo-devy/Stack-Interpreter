@@ -37,14 +37,48 @@ void run_vm(VM *vm)
             break;
         }
 
+        case OP_GET_PARAMETER:
+        {
+            uint8_t index = READ_BYTE();
+
+            if (vm->frame_count == 0)
+            {
+                fprintf(stderr, "Parâmetro usado fora de uma função.\n");
+                exit(0);
+                return;
+            }
+
+            CallFrame *frame = &vm->frames[vm->frame_count - 1];
+            if (index >= frame->parameter_count)
+            {
+                fprintf(stderr, "Índice de parâmetro inválido.\n");
+                exit(0);
+                return;
+            }
+
+            if (vm->sp >= STACK_MAX)
+            {
+                fprintf(stderr, "Stack overflow.\n");
+                exit(0);
+                return;
+            }
+
+            vm->stack[vm->sp++] = vm->stack[frame->stack_base + index];
+            break;
+        }
+
         case OP_CALL_FUNCTION:
         {
             unsigned char function_index = READ_BYTE();
             FunctionSymbol *function = vm->compiler->functions[function_index];
 
+            uint32_t stack_base = vm->sp - function->parameter_count;
+
             vm->frames[vm->frame_count++] = (CallFrame){
                 .chunk = vm->chunk,
-                .ip = vm->ip //
+                .ip = vm->ip,
+                .stack_base = stack_base,
+                .parameter_count = function->parameter_count //
             };
 
             vm->chunk = function->chunk;
@@ -60,6 +94,7 @@ void run_vm(VM *vm)
             CallFrame frame = vm->frames[--vm->frame_count];
             vm->chunk = frame.chunk;
             vm->ip = frame.ip;
+            vm->sp = frame.stack_base;
             break;
         }
 

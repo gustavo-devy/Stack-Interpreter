@@ -88,11 +88,25 @@ static ASTNode *parse_binary(Parser *parser, ASTNode *left, Lexer *lexer)
     return (ASTNode *)node;
 }
 
+static ASTNode *parse_indentifier(Parser *parser, Lexer *lexer)
+{
+    (void)lexer;
+
+    IdentifierNode *node = malloc(sizeof(*node));
+    node->base.type = NODE_INDENTIFIER;
+
+    size_t length = strlen(parser->current_token->value) + 1;
+    node->name = malloc(length);
+    memcpy(node->name, parser->current_token->value, length);
+
+    return (ASTNode *)node;
+}
+
 static ParseRule *get_rule(TokenType type)
 {
     static ParseRule rules[TOKEN_END + 1] = {
         [TOKEN_RESERVED_WORD] = {NULL, NULL, PREC_NONE},
-        [TOKEN_IDENTIFIER] = {NULL, NULL, PREC_NONE},
+        [TOKEN_IDENTIFIER] = {parse_indentifier, NULL, PREC_NONE},
         [TOKEN_NUMBER] = {parse_number, NULL, PREC_NONE},
         [TOKEN_PLUS] = {NULL, parse_binary, PREC_TERM},
         [TOKEN_MINUS] = {NULL, parse_binary, PREC_TERM},
@@ -111,7 +125,7 @@ static ASTNode *parse_expression(Parser *parser, Lexer *lexer, Precedence preced
     if (prefix_rule == NULL)
     {
         printf("Erro: Esperava início de expressão.\n");
-        return NULL;
+        exit(0);
     }
 
     ASTNode *left = prefix_rule(parser, lexer);

@@ -9,6 +9,7 @@
 
 typedef enum NodeType
 {
+    NODE_INDENTIFIER,
     NODE_PUSH,
     NODE_POP,
     NODE_NUMBER,
@@ -34,6 +35,12 @@ typedef struct EndNode
 {
     ASTNode base;
 } EndNode;
+
+typedef struct IdentifierNode
+{
+    ASTNode base;
+    char *name;
+} IdentifierNode;
 
 typedef struct NumberNode
 {

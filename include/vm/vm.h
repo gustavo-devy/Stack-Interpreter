@@ -12,6 +12,8 @@ typedef struct CallFrame
 {
     Chunk *chunk;
     unsigned char *ip;
+    uint32_t stack_base;
+    size_t parameter_count;
 } CallFrame;
 
 typedef struct VM

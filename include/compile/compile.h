@@ -11,6 +11,7 @@ typedef enum OpCode
 {
     OP_CONSTANT,
     OP_GET_VAR,
+    OP_GET_PARAMETER,
     OP_ADD,
     OP_SUBTRACT,
     OP_MULTIPLICATION,
@@ -42,6 +43,7 @@ typedef struct FunctionSymbol
 {
     char *name;
     Chunk *chunk;
+    char **params_names;
     size_t parameter_count;
 } FunctionSymbol;
 
@@ -49,6 +51,7 @@ typedef struct Compiler
 {
     Chunk *main;
     FunctionSymbol **functions;
+    FunctionSymbol *current_function;
     size_t function_count;
     size_t function_capacity;
 } Compiler;
