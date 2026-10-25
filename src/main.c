@@ -30,10 +30,6 @@ void debug(Chunk chunk)
     for (int i = 0; i < chunk.count; i++)
     {
         OpCode op = chunk.code[i];
-        if (op == OP_CONSTANT)
-        {
-            i++;
-        }
         printf("%s\n", ops[(int)op]);
     }
     printf("\n");

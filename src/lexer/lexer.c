@@ -203,7 +203,7 @@ Token *lexer_next_token(Lexer *lexer)
             lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_SEPARATOR, ',');
         default:
-            fprintf(stderr, "Unknown character: %c\n", lexer->current_char);
+            printf("Unknown character: %c\n", lexer->current_char);
             exit(EXIT_FAILURE);
         }
     }

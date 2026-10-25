@@ -106,11 +106,6 @@ typedef struct BlockNode
     size_t statement_capacity;
 } BlockNode;
 
-// typedef struct FunctionParameter
-// {
-//     uint32_t value;
-// } FunctionParameter;
-
 typedef struct FunctionNode
 {
     ASTNode base;

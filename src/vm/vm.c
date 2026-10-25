@@ -33,7 +33,7 @@ void run_vm(VM *vm)
 {
     for (;;)
     {
-        u_char instruction = READ_BYTE();
+        unsigned char instruction = READ_BYTE();
 
         switch (instruction)
         {
@@ -42,7 +42,8 @@ void run_vm(VM *vm)
             int32_t value = READ_CONSTANT();
             if (vm->sp >= STACK_MAX)
             {
-                fprintf(stderr, "Stack overflow.\n");
+                printf("Stack overflow.\n");
+                exit(0);
                 return;
             }
 
@@ -57,7 +58,7 @@ void run_vm(VM *vm)
 
             if (vm->frame_count == 0)
             {
-                fprintf(stderr, "Parâmetro usado fora de uma função.\n");
+                printf("Parâmetro usado fora de uma função.\n");
                 exit(0);
                 return;
             }
@@ -65,14 +66,14 @@ void run_vm(VM *vm)
             CallFrame *frame = &vm->frames[vm->frame_count - 1];
             if (index >= frame->parameter_count)
             {
-                fprintf(stderr, "Índice de parâmetro inválido.\n");
+                printf("Índice de parâmetro inválido.\n");
                 exit(0);
                 return;
             }
 
             if (vm->sp >= STACK_MAX)
             {
-                fprintf(stderr, "Stack overflow.\n");
+                printf("Stack overflow.\n");
                 exit(0);
                 return;
             }
@@ -83,6 +84,12 @@ void run_vm(VM *vm)
 
         case OP_CALL_FUNCTION:
         {
+            if (vm->frame_count - 1 == FRAMES_MAX)
+            {
+                printf("Limite maximo de chamadas de funções atingia.\n");
+                exit(0);
+            }
+
             unsigned char function_index = READ_BYTE();
             FunctionSymbol *function = vm->compiler->functions[function_index];
 
@@ -154,13 +161,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp < 2)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -178,13 +185,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp == 0)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -202,13 +209,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp < 2)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -226,13 +233,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp < 2)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -250,13 +257,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp < 2)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -274,13 +281,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp == 0)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 1))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -293,13 +300,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp < 2)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -317,13 +324,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp < 2)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -341,13 +348,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp < 2)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -365,13 +372,13 @@ void run_vm(VM *vm)
         {
             if (vm->sp < 2)
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 return;
             }
 
             if (!has_stack_values(vm, 2))
             {
-                fprintf(stderr, "Stack underflow.\n");
+                printf("Stack underflow.\n");
                 exit(0);
                 return;
             }
@@ -392,7 +399,7 @@ void run_vm(VM *vm)
 
         default:
         {
-            fprintf(stderr, "Unknown instruction: %d\n", instruction);
+            printf("Unknown instruction: %d\n", instruction);
             exit(0);
         }
         }
