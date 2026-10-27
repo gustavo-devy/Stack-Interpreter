@@ -51,7 +51,7 @@ int main(int argc, char const *argv[])
     }
 
     Lexer lexer;
-    lexer_init(&lexer, input);
+    lexer_init(&lexer, argv[1], input);
 
     Parser parser;
     parser_init(&parser);

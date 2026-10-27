@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "error/error.h"
+
 typedef enum TokenType
 {
     TOKEN_RESERVED_WORD,
@@ -45,6 +47,7 @@ typedef struct Token
 {
     TokenType type;
     const char *value;
+    TokenLocation location;
     ReservedWord reserved_word;
     int8_t is_reserved_word;
 } Token;
@@ -54,9 +57,10 @@ typedef struct Lexer
     const char *source;
     char current_char;
     size_t position;
+    SourceLocation location;
 } Lexer;
 
-void lexer_init(Lexer *lexer, const char *source);
+void lexer_init(Lexer *lexer, const char *filename, const char *source);
 Token *lexer_next_token(Lexer *lexer);
 void lexer_free_token(Token *token);
 

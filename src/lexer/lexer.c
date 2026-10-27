@@ -1,5 +1,7 @@
 #include "lexer/lexer.h"
 
+#define ADD_COLUMN(lexer) lexer->location.column++;
+
 static void lexer_advance(Lexer *lexer)
 {
     lexer->position++;
@@ -11,6 +13,7 @@ static void lexer_skip_whitespace(Lexer *lexer)
     while (isspace(lexer->current_char))
     {
         lexer_advance(lexer);
+        ADD_COLUMN(lexer)
     }
 }
 
@@ -30,6 +33,7 @@ static Token *lexer_get_identifier(Lexer *lexer)
     while (isalpha(lexer->current_char) || lexer->current_char == '_')
     {
         lexer_advance(lexer);
+        ADD_COLUMN(lexer)
     }
 
     size_t length = lexer->position - start_position;
@@ -120,6 +124,7 @@ static Token *lexer_get_number(Lexer *lexer)
     while (isdigit(lexer->current_char))
     {
         lexer_advance(lexer);
+        ADD_COLUMN(lexer)
     }
 
     size_t length = lexer->position - start_position;
@@ -132,7 +137,7 @@ static Token *lexer_get_number(Lexer *lexer)
 
 static Token *lexer_create_char_token(Lexer *lexer, TokenType type, char ch)
 {
-    (void)lexer;
+    ADD_COLUMN(lexer)
 
     char *value = malloc(2);
     value[0] = ch;
@@ -140,11 +145,14 @@ static Token *lexer_create_char_token(Lexer *lexer, TokenType type, char ch)
     return lexer_create_token(type, value, RESERVED_WORD_NONE, 0);
 }
 
-void lexer_init(Lexer *lexer, const char *source)
+void lexer_init(Lexer *lexer, const char *filename, const char *source)
 {
     lexer->source = source;
     lexer->position = 0;
     lexer->current_char = source[0];
+    lexer->location.filename = filename;
+    lexer->location.line = 0;
+    lexer->location.column = 1;
 }
 
 Token *lexer_next_token(Lexer *lexer)
@@ -203,7 +211,7 @@ Token *lexer_next_token(Lexer *lexer)
             lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_SEPARATOR, ',');
         default:
-            printf("Unknown character: %c\n", lexer->current_char);
+            printf("Unknown character: %c FILE: %s, COLUMN: %d\n", lexer->current_char, lexer->location.filename, lexer->location.column);
             exit(EXIT_FAILURE);
         }
     }
