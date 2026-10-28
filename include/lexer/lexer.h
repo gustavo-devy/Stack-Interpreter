@@ -49,7 +49,6 @@ typedef struct Token
     const char *value;
     TokenLocation location;
     ReservedWord reserved_word;
-    int8_t is_reserved_word;
 } Token;
 
 typedef struct Lexer

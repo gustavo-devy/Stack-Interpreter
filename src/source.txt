@@ -1,1 +1,7 @@
-push 10
+func main<x>
+{
+    push x
+    print
+}
+
+call main<10>
