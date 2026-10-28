@@ -17,17 +17,33 @@ static void lexer_skip_whitespace(Lexer *lexer)
     }
 }
 
-static Token *lexer_create_token(TokenType type, const char *value, ReservedWord reserved_word)
+static Token *lexer_create_token(TokenType type, const char *value)
 {
     Token *token = (Token *)malloc(sizeof(Token));
     token->type = type;
     token->value = value;
-    token->reserved_word = reserved_word;
     return token;
 }
 
 static Token *lexer_get_identifier(Lexer *lexer)
 {
+    static const struct
+    {
+        const char *name;
+        TokenType type;
+    } reserved_words[] = {
+        {"push", TOKEN_RESERVED_WORD_PUSH},
+        {"pop", TOKEN_RESERVED_WORD_POP},
+        {"add", TOKEN_RESERVED_WORD_ADD},
+        {"sub", TOKEN_RESERVED_WORD_SUB},
+        {"mul", TOKEN_RESERVED_WORD_MUL},
+        {"div", TOKEN_RESERVED_WORD_DIV},
+        {"mod", TOKEN_RESERVED_WORD_MOD},
+        {"func", TOKEN_RESERVED_WORD_FUNC},
+        {"call", TOKEN_RESERVED_WORD_CALL_FUNC},
+        {"print", TOKEN_RESERVED_WORD_PRINT},
+    };
+
     size_t start_position = lexer->position;
     while (isalpha(lexer->current_char) || lexer->current_char == '_')
     {
@@ -40,60 +56,15 @@ static Token *lexer_get_identifier(Lexer *lexer)
     strncpy(identifier, lexer->source + start_position, length);
     identifier[length] = '\0';
 
-    ReservedWord reserved_word = RESERVED_WORD_NONE;
-
-    if (strcmp(identifier, "push") == 0)
+    for (size_t i = 0; i < sizeof(reserved_words) / sizeof(reserved_words[0]); i++)
     {
-        reserved_word = RESERVED_WORD_PUSH;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "pop") == 0)
-    {
-        reserved_word = RESERVED_WORD_POP;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "add") == 0)
-    {
-        reserved_word = RESERVED_WORD_ADD;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "sub") == 0)
-    {
-        reserved_word = RESERVED_WORD_SUB;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "mul") == 0)
-    {
-        reserved_word = RESERVED_WORD_MUL;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "div") == 0)
-    {
-        reserved_word = RESERVED_WORD_DIV;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "mod") == 0)
-    {
-        reserved_word = RESERVED_WORD_MOD;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "print") == 0)
-    {
-        reserved_word = RESERVED_WORD_PRINT;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "func") == 0)
-    {
-        reserved_word = RESERVED_WORD_FUNC;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
-    }
-    else if (strcmp(identifier, "call") == 0)
-    {
-        reserved_word = RESERVED_WORD_CALL_FUNC;
-        return lexer_create_token(TOKEN_RESERVED_WORD, identifier, reserved_word);
+        if (strcmp(identifier, reserved_words[i].name) == 0)
+        {
+            return lexer_create_token(reserved_words[i].type, identifier);
+        }
     }
 
-    return lexer_create_token(TOKEN_IDENTIFIER, identifier, reserved_word);
+    return lexer_create_token(TOKEN_IDENTIFIER, identifier);
 }
 
 static Token *lexer_get_number(Lexer *lexer)
@@ -110,7 +81,7 @@ static Token *lexer_get_number(Lexer *lexer)
     strncpy(number, lexer->source + start_position, length);
     number[length] = '\0';
 
-    return lexer_create_token(TOKEN_NUMBER, number, RESERVED_WORD_NONE);
+    return lexer_create_token(TOKEN_NUMBER, number);
 }
 
 static Token *lexer_create_char_token(Lexer *lexer, TokenType type, char ch)
@@ -120,7 +91,7 @@ static Token *lexer_create_char_token(Lexer *lexer, TokenType type, char ch)
     char *value = malloc(2);
     value[0] = ch;
     value[1] = '\0';
-    return lexer_create_token(type, value, RESERVED_WORD_NONE);
+    return lexer_create_token(type, value);
 }
 
 void lexer_init(Lexer *lexer, const char *filename, const char *source)
@@ -197,7 +168,7 @@ Token *lexer_next_token(Lexer *lexer)
     char *value = malloc(sizeof(char) * 4);
     strcpy(value, "END");
 
-    return lexer_create_token(TOKEN_END, value, RESERVED_WORD_NONE);
+    return lexer_create_token(TOKEN_END, value);
 }
 
 void lexer_free_token(Token *token)

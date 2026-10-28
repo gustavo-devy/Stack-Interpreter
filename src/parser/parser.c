@@ -105,7 +105,6 @@ static ASTNode *parse_indentifier(Parser *parser, Lexer *lexer)
 static ParseRule *get_rule(TokenType type)
 {
     static ParseRule rules[TOKEN_END + 1] = {
-        [TOKEN_RESERVED_WORD] = {NULL, NULL, PREC_NONE},
         [TOKEN_IDENTIFIER] = {parse_indentifier, NULL, PREC_NONE},
         [TOKEN_NUMBER] = {parse_number, NULL, PREC_NONE},
         [TOKEN_PLUS] = {NULL, parse_binary, PREC_TERM},
@@ -293,38 +292,31 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer);
 
 static ASTNode *parse_statement(Parser *parser, Lexer *lexer)
 {
-    if (parser->current_token->type == TOKEN_RESERVED_WORD)
+    switch (parser->current_token->type)
     {
-        switch (parser->current_token->reserved_word)
-        {
-        case RESERVED_WORD_PUSH:
-            return parse_push(parser, lexer);
-        case RESERVED_WORD_POP:
-            return parse_pop(parser);
-        case RESERVED_WORD_PRINT:
-            return parser_print(parser);
-        case RESERVED_WORD_ADD:
-            return parser_add(parser);
-        case RESERVED_WORD_SUB:
-            return parser_sub(parser);
-        case RESERVED_WORD_MUL:
-            return parser_mul(parser);
-        case RESERVED_WORD_DIV:
-            return parser_div(parser);
-        case RESERVED_WORD_MOD:
-            return parser_mod(parser);
-        case RESERVED_WORD_FUNC:
-            return parse_function(parser, lexer);
-        case RESERVED_WORD_CALL_FUNC:
-            return parse_call_function(parser, lexer);
-        default:
-            printf("Erro: palavra reservada desconhecida.\n");
-            exit(0);
-            return NULL;
-        }
+    case TOKEN_RESERVED_WORD_PUSH:
+        return parse_push(parser, lexer);
+    case TOKEN_RESERVED_WORD_POP:
+        return parse_pop(parser);
+    case TOKEN_RESERVED_WORD_PRINT:
+        return parser_print(parser);
+    case TOKEN_RESERVED_WORD_ADD:
+        return parser_add(parser);
+    case TOKEN_RESERVED_WORD_SUB:
+        return parser_sub(parser);
+    case TOKEN_RESERVED_WORD_MUL:
+        return parser_mul(parser);
+    case TOKEN_RESERVED_WORD_DIV:
+        return parser_div(parser);
+    case TOKEN_RESERVED_WORD_MOD:
+        return parser_mod(parser);
+    case TOKEN_RESERVED_WORD_FUNC:
+        return parse_function(parser, lexer);
+    case TOKEN_RESERVED_WORD_CALL_FUNC:
+        return parse_call_function(parser, lexer);
+    default:
+        return parse_expression(parser, lexer, PREC_NONE);
     }
-
-    return parse_expression(parser, lexer, PREC_NONE);
 }
 
 static ASTNode *parse_function(Parser *parser, Lexer *lexer)
