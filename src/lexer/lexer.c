@@ -1,11 +1,17 @@
 #include "lexer/lexer.h"
 
-#define ADD_COLUMN(lexer) lexer->location.column++;
-
 static void lexer_advance(Lexer *lexer)
 {
     lexer->position++;
     lexer->current_char = lexer->source[lexer->position];
+    if (lexer->current_char == '\n')
+    {
+        lexer->location.line++;
+        lexer->location.column = 1;
+        return;
+    }
+
+    lexer->location.column++;
 }
 
 static void lexer_skip_whitespace(Lexer *lexer)
@@ -13,7 +19,6 @@ static void lexer_skip_whitespace(Lexer *lexer)
     while (isspace(lexer->current_char))
     {
         lexer_advance(lexer);
-        ADD_COLUMN(lexer)
     }
 }
 
@@ -48,7 +53,6 @@ static Token *lexer_get_identifier(Lexer *lexer)
     while (isalpha(lexer->current_char) || lexer->current_char == '_')
     {
         lexer_advance(lexer);
-        ADD_COLUMN(lexer)
     }
 
     size_t length = lexer->position - start_position;
@@ -73,7 +77,6 @@ static Token *lexer_get_number(Lexer *lexer)
     while (isdigit(lexer->current_char))
     {
         lexer_advance(lexer);
-        ADD_COLUMN(lexer)
     }
 
     size_t length = lexer->position - start_position;
@@ -86,8 +89,6 @@ static Token *lexer_get_number(Lexer *lexer)
 
 static Token *lexer_create_char_token(Lexer *lexer, TokenType type, char ch)
 {
-    ADD_COLUMN(lexer)
-
     char *value = malloc(2);
     value[0] = ch;
     value[1] = '\0';
@@ -100,7 +101,7 @@ void lexer_init(Lexer *lexer, const char *filename, const char *source)
     lexer->position = 0;
     lexer->current_char = source[0];
     lexer->location.filename = filename;
-    lexer->location.line = 0;
+    lexer->location.line = 1;
     lexer->location.column = 1;
 }
 
@@ -160,7 +161,7 @@ Token *lexer_next_token(Lexer *lexer)
             lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_SEPARATOR, ',');
         default:
-            printf("Unknown character: %c FILE: %s, COLUMN: %lu\n", lexer->current_char, lexer->location.filename, lexer->location.column);
+            printf("Unknown character: %c FILE: %s, LINE: %lu, COLUMN: %lu\n", lexer->current_char, lexer->location.filename, lexer->location.line, lexer->location.column);
             exit(EXIT_FAILURE);
         }
     }
