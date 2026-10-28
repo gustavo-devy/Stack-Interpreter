@@ -1,17 +1,25 @@
 #include "lexer/lexer.h"
 
+// static SourceLocation loc_at(Lexer *lexer, size_t offset, size_t length)
+// {
+// }
+
 static void lexer_advance(Lexer *lexer)
 {
-    lexer->position++;
-    lexer->current_char = lexer->source[lexer->position];
     if (lexer->current_char == '\n')
     {
         lexer->location.line++;
         lexer->location.column = 1;
-        return;
+    }
+    else if (lexer->current_char != '\0')
+    {
+        lexer->location.column++;
     }
 
-    lexer->location.column++;
+    lexer->position++;
+    lexer->current_char = lexer->source[lexer->position];
+    lexer->location.offset = lexer->position;
+    lexer->location.length = lexer->current_char == '\0' ? 0 : 1;
 }
 
 static void lexer_skip_whitespace(Lexer *lexer)
@@ -114,7 +122,7 @@ static Token *lexer_create_char_token(Lexer *lexer, TokenType type, char ch)
     TokenLocation location;
 
     location.start = lexer->position;
-    location.end = location.start + 2;
+    location.end = location.start + 1;
     location.filename = lexer->location.filename;
     location.column = lexer->location.column;
     location.line = lexer->location.line;
@@ -123,17 +131,23 @@ static Token *lexer_create_char_token(Lexer *lexer, TokenType type, char ch)
     value[0] = ch;
     value[1] = '\0';
 
-    return lexer_create_token(type, value, location);
+    Token *token = lexer_create_token(type, value, location);
+    lexer_advance(lexer);
+    return token;
 }
 
-void lexer_init(Lexer *lexer, const char *filename, const char *source)
+void lexer_init(Lexer *lexer, const char *filename, const char *source, DiagnosticList *diags)
 {
     lexer->source = source;
     lexer->position = 0;
     lexer->current_char = source[0];
     lexer->location.filename = filename;
+    lexer->location.source = source;
     lexer->location.line = 1;
     lexer->location.column = 1;
+    lexer->location.offset = 0;
+    lexer->location.length = source[0] == '\0' ? 0 : 1;
+    lexer->diags = diags;
 }
 
 Token *lexer_next_token(Lexer *lexer)
@@ -159,40 +173,31 @@ Token *lexer_next_token(Lexer *lexer)
         switch (lexer->current_char)
         {
         case '+':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_PLUS, '+');
         case '-':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_MINUS, '-');
         case '*':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_STAR, '*');
         case '/':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_SLASH, '/');
         case '(':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_LEFT_PAREN, '(');
         case ')':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_RIGHT_PAREN, ')');
         case '<':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_LEFT_ANGLE, '<');
         case '>':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_RIGHT_ANGLE, '>');
         case '{':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_LEFT_BRACE, '{');
         case '}':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_RIGHT_BRACE, '}');
         case ',':
-            lexer_advance(lexer);
             return lexer_create_char_token(lexer, TOKEN_SEPARATOR, ',');
         default:
-            printf("Unknown character: %c FILE: %s, LINE: %lu, COLUMN: %lu\n", lexer->current_char, lexer->location.filename, lexer->location.line, lexer->location.column);
+            diag_emit(lexer->diags, SEV_ERROR, "E0002", lexer->location,
+                      "invalid character '%c'", lexer->current_char);
+            diag_render(&lexer->diags->items[lexer->diags->count - 1], stderr);
             exit(EXIT_FAILURE);
         }
     }
@@ -200,7 +205,7 @@ Token *lexer_next_token(Lexer *lexer)
     char *value = malloc(sizeof(char) * 4);
     strcpy(value, "END");
 
-    return lexer_create_token(TOKEN_END, value, (TokenLocation){.filename = lexer->location.filename, .start = lexer->position, .column = lexer->location.column, .line = lexer->location.line, .end = lexer->position + 4});
+    return lexer_create_token(TOKEN_END, value, (TokenLocation){.filename = lexer->location.filename, .start = lexer->position, .column = lexer->location.column, .line = lexer->location.line, .end = lexer->position});
 }
 
 void lexer_free_token(Token *token)

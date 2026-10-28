@@ -1,7 +1,7 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-#include <stdint.h>
+#include <stddef.h>
 
 typedef struct TokenLocation
 {
@@ -19,6 +19,7 @@ typedef struct SourceLocation
     size_t line;
     size_t column;
     size_t offset;
+    size_t length;
 } SourceLocation;
 
 #endif // ERROR_H

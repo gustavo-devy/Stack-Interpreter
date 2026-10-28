@@ -1,7 +1,2 @@
-func main<x1>
-{
-    push x1 + 2
-    print
-}
-
-call main<10>
+push 10!
+print

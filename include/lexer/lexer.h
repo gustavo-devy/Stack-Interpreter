@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "error/error.h"
+#include "error/diagnostic.h"
 
 typedef enum TokenType
 {
@@ -49,10 +50,11 @@ typedef struct Lexer
     const char *source;
     char current_char;
     size_t position;
+    DiagnosticList *diags;
     SourceLocation location;
 } Lexer;
 
-void lexer_init(Lexer *lexer, const char *filename, const char *source);
+void lexer_init(Lexer *lexer, const char *filename, const char *source, DiagnosticList *diags);
 Token *lexer_next_token(Lexer *lexer);
 void lexer_free_token(Token *token);
 

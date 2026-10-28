@@ -61,9 +61,12 @@ int main(int argc, char const *argv[])
         return EXIT_FAILURE;
     }
 
+    DiagnosticList *diags = malloc(sizeof(DiagnosticList));
+    diags->count = 0;
+
     Lexer lexer;
-    lexer_init(&lexer, argv[1], input);
-    lexer_view_tokens(lexer);
+    lexer_init(&lexer, argv[1], input, diags);
+    // lexer_view_tokens(lexer);
 
     Parser parser;
     parser_init(&parser);

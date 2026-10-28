@@ -1,11 +1,13 @@
 #ifndef DIAGNOSTIC_H
 #define DIAGNOSTIC_H
 
+#include <stdio.h>
+
 #include "error.h"
 
 #define DIAG_MAX 64
 
-typedef enum Severity 
+typedef enum Severity
 {
     SEV_ERROR,
     SEV_WARNING,
@@ -17,14 +19,17 @@ typedef struct Diagnostic
     const char *code;
     char message[256];
     char note[256];
-    SourceLocation loc;
+    SourceLocation location;
 } Diagnostic;
 
-typedef struct DiagnosticList 
+typedef struct DiagnosticList
 {
     Diagnostic items[DIAG_MAX];
     int count;
 } DiagnosticList;
 
-#endif // DIAGNOSTIC_H
+void diag_emit(DiagnosticList *list, Severity sev, const char *code,
+               SourceLocation location, const char *fmt, ...);
+void diag_render(const Diagnostic *d, FILE *out);
 
+#endif // DIAGNOSTIC_H
