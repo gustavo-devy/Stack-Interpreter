@@ -1,8 +1,7 @@
-func main<x>
+func main<x1>
 {
-    push x
+    push x1 + 2
     print
-    !
 }
 
 call main<10>

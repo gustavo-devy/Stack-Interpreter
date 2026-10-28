@@ -50,7 +50,7 @@ static Token *lexer_get_identifier(Lexer *lexer)
     };
 
     size_t start_position = lexer->position;
-    while (isalpha(lexer->current_char) || lexer->current_char == '_')
+    while (isalpha(lexer->current_char) || isdigit(lexer->current_char) || lexer->current_char == '_')
     {
         lexer_advance(lexer);
     }
@@ -87,7 +87,7 @@ static Token *lexer_get_number(Lexer *lexer)
     return lexer_create_token(TOKEN_NUMBER, number);
 }
 
-static Token *lexer_create_char_token(Lexer *lexer, TokenType type, char ch)
+static Token *lexer_create_char_token(TokenType type, char ch)
 {
     char *value = malloc(2);
     value[0] = ch;
@@ -129,37 +129,37 @@ Token *lexer_next_token(Lexer *lexer)
         {
         case '+':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_PLUS, '+');
+            return lexer_create_char_token(TOKEN_PLUS, '+');
         case '-':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_MINUS, '-');
+            return lexer_create_char_token(TOKEN_MINUS, '-');
         case '*':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_STAR, '*');
+            return lexer_create_char_token(TOKEN_STAR, '*');
         case '/':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_SLASH, '/');
+            return lexer_create_char_token(TOKEN_SLASH, '/');
         case '(':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_LEFT_PAREN, '(');
+            return lexer_create_char_token(TOKEN_LEFT_PAREN, '(');
         case ')':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_RIGHT_PAREN, ')');
+            return lexer_create_char_token(TOKEN_RIGHT_PAREN, ')');
         case '<':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_LEFT_ANGLE, '<');
+            return lexer_create_char_token(TOKEN_LEFT_ANGLE, '<');
         case '>':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_RIGHT_ANGLE, '>');
+            return lexer_create_char_token(TOKEN_RIGHT_ANGLE, '>');
         case '{':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_LEFT_BRACE, '{');
+            return lexer_create_char_token(TOKEN_LEFT_BRACE, '{');
         case '}':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_RIGHT_BRACE, '}');
+            return lexer_create_char_token(TOKEN_RIGHT_BRACE, '}');
         case ',':
             lexer_advance(lexer);
-            return lexer_create_char_token(lexer, TOKEN_SEPARATOR, ',');
+            return lexer_create_char_token(TOKEN_SEPARATOR, ',');
         default:
             printf("Unknown character: %c FILE: %s, LINE: %lu, COLUMN: %lu\n", lexer->current_char, lexer->location.filename, lexer->location.line, lexer->location.column);
             exit(EXIT_FAILURE);
