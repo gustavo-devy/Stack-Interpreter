@@ -11,7 +11,6 @@
 
 typedef enum TokenType
 {
-    TOKEN_RESERVED_WORD,
     TOKEN_IDENTIFIER,
     TOKEN_NUMBER,
     TOKEN_PLUS,
@@ -25,31 +24,24 @@ typedef enum TokenType
     TOKEN_LEFT_BRACE,
     TOKEN_RIGHT_BRACE,
     TOKEN_SEPARATOR,
+    TOKEN_RESERVED_WORD_PUSH,
+    TOKEN_RESERVED_WORD_POP,
+    TOKEN_RESERVED_WORD_ADD,
+    TOKEN_RESERVED_WORD_SUB,
+    TOKEN_RESERVED_WORD_MUL,
+    TOKEN_RESERVED_WORD_DIV,
+    TOKEN_RESERVED_WORD_MOD,
+    TOKEN_RESERVED_WORD_FUNC,
+    TOKEN_RESERVED_WORD_CALL_FUNC,
+    TOKEN_RESERVED_WORD_PRINT,
     TOKEN_END
 } TokenType;
-
-typedef enum ReservedWord
-{
-    RESERVED_WORD_NONE,
-    RESERVED_WORD_PUSH,
-    RESERVED_WORD_POP,
-    RESERVED_WORD_ADD,
-    RESERVED_WORD_SUB,
-    RESERVED_WORD_MUL,
-    RESERVED_WORD_DIV,
-    RESERVED_WORD_MOD,
-    RESERVED_WORD_FUNC,
-    RESERVED_WORD_CALL_FUNC,
-    RESERVED_WORD_PRINT,
-} ReservedWord;
 
 typedef struct Token
 {
     TokenType type;
     const char *value;
     TokenLocation location;
-    ReservedWord reserved_word;
-    int8_t is_reserved_word;
 } Token;
 
 typedef struct Lexer
