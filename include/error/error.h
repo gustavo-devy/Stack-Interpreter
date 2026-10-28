@@ -6,12 +6,10 @@
 typedef struct TokenLocation
 {
     const char *filename;
-    size_t length;
     size_t start;
     size_t end;
     size_t line;
     size_t column;
-    size_t offset;
 } TokenLocation;
 
 typedef struct SourceLocation

@@ -35,6 +35,17 @@ void debug(Chunk chunk)
     printf("\n");
 }
 
+void lexer_view_tokens(Lexer lexer)
+{
+    Token *token = lexer_next_token(&lexer);
+    while (token->type != TOKEN_END)
+    {
+        printf("TYPE: [%d], VALUE: %s, LINE: %lu, COLUMN: %lu, START: %lu, END: %lu\n",
+               token->type, token->value, token->location.line, token->location.column, token->location.start, token->location.end);
+        token = lexer_next_token(&lexer);
+    }
+}
+
 int main(int argc, char const *argv[])
 {
     if (argc < 2)
@@ -52,6 +63,7 @@ int main(int argc, char const *argv[])
 
     Lexer lexer;
     lexer_init(&lexer, argv[1], input);
+    lexer_view_tokens(lexer);
 
     Parser parser;
     parser_init(&parser);
