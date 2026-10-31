@@ -25,7 +25,7 @@ typedef struct Diagnostic
 typedef struct DiagnosticList
 {
     Diagnostic items[DIAG_MAX];
-    int count;
+    size_t count;
 } DiagnosticList;
 
 void diag_emit(DiagnosticList *list, Severity sev, const char *code,

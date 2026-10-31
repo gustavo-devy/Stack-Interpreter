@@ -1,2 +1,8 @@
-push 10!
-print
+func main<a, b>
+{
+    =
+    push a + )
+    print
+}
+
+call main<1, 9>

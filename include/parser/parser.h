@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "lexer/lexer.h"
+#include "error/diagnostic.h"
 
 typedef enum NodeType
 {
@@ -129,9 +130,10 @@ typedef struct Parser
 {
     size_t position;
     Token *current_token;
+    DiagnosticList *diags;
 } Parser;
 
-void parser_init(Parser *parser);
+void parser_init(Parser *parser, DiagnosticList *diags);
 ASTNode *parser_code(Parser *parser, Lexer *lexer);
 void parser_free_ast(ASTNode *node);
 

@@ -22,7 +22,31 @@ typedef struct ParseRule
 static Token *lexer_peek_token(Lexer *lexer)
 {
     Lexer copy = *lexer;
+    DiagnosticList peek_diagnostics = {0};
+    copy.diags = &peek_diagnostics;
     return lexer_next_token(&copy);
+}
+
+static SourceLocation parser_token_location(Lexer *lexer, Token *token)
+{
+    return (SourceLocation){
+        .filename = token->location.filename,
+        .source = lexer->source,
+        .line = token->location.line,
+        .column = token->location.column,
+        .offset = token->location.start,
+        .length = token->location.end - token->location.start,
+    };
+}
+
+static void parser_report_unexpected_token(Parser *parser, Lexer *lexer,
+                                           const char *code, const char *message)
+{
+    if (parser->current_token->type == TOKEN_UNKNOWN)
+        return;
+
+    diag_emit(parser->diags, SEV_ERROR, code,
+              parser_token_location(lexer, parser->current_token), "%s", message);
 }
 
 static void parser_advance_token(Parser *parser, Lexer *lexer)
@@ -61,9 +85,14 @@ static ASTNode *parse_grouping(Parser *parser, Lexer *lexer)
     parser_advance_token(parser, lexer);
     ASTNode *expression = parse_expression(parser, lexer, PREC_NONE);
 
+    if (expression == NULL)
+        return NULL;
+
     if (parser->current_token->type != TOKEN_RIGHT_PAREN)
     {
-        printf("Erro: parêntese direito esperado.\n");
+        parser_report_unexpected_token(parser, lexer, "E0101",
+                                       "Expected ')' after expression");
+        parser_free_ast(expression);
         return NULL;
     }
 
@@ -74,11 +103,21 @@ static ASTNode *parse_grouping(Parser *parser, Lexer *lexer)
 static ASTNode *parse_binary(Parser *parser, ASTNode *left, Lexer *lexer)
 {
     char operator = parser->current_token->value[0];
+
     ParseRule *rule = get_rule(parser->current_token->type);
+    if (rule == NULL)
+        return NULL;
+
     Precedence precedence = rule->precedence;
 
     parser_advance_token(parser, lexer);
     ASTNode *right = parse_expression(parser, lexer, precedence);
+
+    if (right == NULL)
+    {
+        parser_free_ast(left);
+        return NULL;
+    }
 
     OpNode *node = malloc(sizeof(OpNode));
     node->base.type = NODE_OP;
@@ -123,11 +162,15 @@ static ASTNode *parse_expression(Parser *parser, Lexer *lexer, Precedence preced
     PrefixFn prefix_rule = get_rule(parser->current_token->type)->prefix;
     if (prefix_rule == NULL)
     {
-        printf("Erro: Esperava início de expressão.\n");
-        exit(0);
+        parser_report_unexpected_token(parser, lexer, "E0100",
+                                       "Invalid expression start");
+        return NULL;
     }
 
     ASTNode *left = prefix_rule(parser, lexer);
+    if (left == NULL)
+        return NULL;
+
     Token *peeked = lexer_peek_token(lexer);
 
     while (peeked != NULL && precedence < get_rule(peeked->type)->precedence)
@@ -138,11 +181,16 @@ static ASTNode *parse_expression(Parser *parser, Lexer *lexer, Precedence preced
         InfixFn infix_rule = get_rule(parser->current_token->type)->infix;
         if (infix_rule == NULL)
         {
-            printf("Erro: Operador inesperado em expressão.\n");
-            return left;
+            parser_report_unexpected_token(parser, lexer, "E0100",
+                                           "Expected an operator in expression");
+            parser_free_ast(left);
+            return NULL;
         }
 
         left = infix_rule(parser, left, lexer);
+        if (left == NULL)
+            return NULL;
+
         peeked = lexer_peek_token(lexer);
     }
 
@@ -158,6 +206,9 @@ static ASTNode *parse_push(Parser *parser, Lexer *lexer)
 {
     parser_advance_token(parser, lexer);
     ASTNode *expression = parse_expression(parser, lexer, PREC_NONE);
+
+    if (expression == NULL)
+        return NULL;
 
     PushNode *node = malloc(sizeof(PushNode));
     node->base.type = NODE_PUSH;
@@ -234,13 +285,15 @@ static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
     parser_advance_token(parser, lexer);
     if (parser->current_token->type != TOKEN_IDENTIFIER)
     {
-        printf("Esperava o nome da função após 'call'\n");
-        exit(0);
+        parser_report_unexpected_token(parser, lexer, "E0201",
+                                      "Expected function name after 'call'");
+        return NULL;
     }
 
     CallFunctionNode *node = malloc(sizeof(CallFunctionNode));
     node->base.type = NODE_CALL_FUNCTION;
-    node->name = malloc(sizeof(char) * 8);
+    size_t name_length = strlen(parser->current_token->value) + 1;
+    node->name = malloc(name_length);
     strcpy(node->name, parser->current_token->value);
     node->argument_count = 0;
     node->argument_capacity = 8;
@@ -250,18 +303,28 @@ static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
 
     if (parser->current_token->type != TOKEN_LEFT_ANGLE)
     {
-        printf("Esperava '<'\n");
-        exit(0);
+        parser_report_unexpected_token(parser, lexer, "E0201",
+                                      "Expected '<' before function arguments");
+        parser_free_ast((ASTNode *)node);
+        return NULL;
     }
     parser_advance_token(parser, lexer);
 
-    while (parser->current_token->type != TOKEN_RIGHT_ANGLE)
+    while (parser->current_token->type != TOKEN_RIGHT_ANGLE &&
+           parser->current_token->type != TOKEN_END)
     {
         ASTNode *argument_node = parse_expression(parser, lexer, PREC_NONE);
         if (argument_node == NULL)
         {
-            printf("Argumento inválido na chamada da função '%s'", node->name);
-            exit(0);
+            parser_free_ast((ASTNode *)node);
+            return NULL;
+        }
+
+        if (node->argument_count == node->argument_capacity)
+        {
+            node->argument_capacity *= 2;
+            node->arguments = realloc(node->arguments,
+                                      sizeof(ASTNode *) * node->argument_capacity);
         }
         node->arguments[node->argument_count++] = argument_node;
 
@@ -274,21 +337,35 @@ static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
             parser_advance_token(parser, lexer);
             if (parser->current_token->type == TOKEN_RIGHT_ANGLE)
             {
-                printf("Expressão inválida após ',' na chamada da função '%s'", node->name);
-                exit(0);
+                parser_report_unexpected_token(parser, lexer, "E0201",
+                                              "Expected an argument after ','");
+                parser_free_ast((ASTNode *)node);
+                return NULL;
             }
 
             continue;
         }
 
-        printf("Erro na chamada da função '%s'", node->name);
-        exit(0);
+        parser_report_unexpected_token(parser, lexer, "E0201",
+                                      "Expected ',' or '>' after function argument");
+        parser_free_ast((ASTNode *)node);
+        return NULL;
+    }
+
+    if (parser->current_token->type == TOKEN_END)
+    {
+        parser_report_unexpected_token(parser, lexer, "E0201",
+                                      "Expected '>' after function arguments");
+        parser_free_ast((ASTNode *)node);
+        return NULL;
     }
 
     return (ASTNode *)node;
 }
 
 static ASTNode *parse_function(Parser *parser, Lexer *lexer);
+static int is_statement_start(TokenType type);
+static void parser_synchronize(Parser *parser, Lexer *lexer, int inside_block);
 
 static ASTNode *parse_statement(Parser *parser, Lexer *lexer)
 {
@@ -315,7 +392,9 @@ static ASTNode *parse_statement(Parser *parser, Lexer *lexer)
     case TOKEN_RESERVED_WORD_CALL_FUNC:
         return parse_call_function(parser, lexer);
     default:
-        return parse_expression(parser, lexer, PREC_NONE);
+        parser_report_unexpected_token(parser, lexer, "E0200",
+                                       "Expected a statement");
+        return NULL;
     }
 }
 
@@ -323,7 +402,7 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
 {
     FunctionNode *node = malloc(sizeof(FunctionNode));
     node->base.type = NODE_FUNCTION;
-    node->name = malloc(sizeof(char) * 32);
+    node->name = NULL;
     node->params = malloc(sizeof(char *) * 8);
     node->parameter_count = 0;
     node->parameter_capacity = 8;
@@ -338,20 +417,26 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
     parser_advance_token(parser, lexer);
     if (parser->current_token->type != TOKEN_IDENTIFIER)
     {
-        printf("Esperava o nome da função após 'func'\n");
-        exit(0);
+        parser_report_unexpected_token(parser, lexer, "E0202",
+                                      "Expected function name after 'func'");
+        parser_free_ast((ASTNode *)node);
+        return NULL;
     }
+    node->name = malloc(strlen(parser->current_token->value) + 1);
     strcpy(node->name, parser->current_token->value);
 
     parser_advance_token(parser, lexer);
     if (parser->current_token->type != TOKEN_LEFT_ANGLE)
     {
-        printf("Esperava '<'\n");
-        exit(0);
+        parser_report_unexpected_token(parser, lexer, "E0202",
+                                      "Expected '<' before function parameters");
+        parser_free_ast((ASTNode *)node);
+        return NULL;
     }
 
     parser_advance_token(parser, lexer);
-    while (parser->current_token->type != TOKEN_RIGHT_ANGLE)
+    while (parser->current_token->type != TOKEN_RIGHT_ANGLE &&
+           parser->current_token->type != TOKEN_END)
     {
         if (parser->current_token->type == TOKEN_SEPARATOR)
         {
@@ -361,8 +446,17 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
 
         if (parser->current_token->type != TOKEN_IDENTIFIER)
         {
-            printf("Esperava um parametro logo após ','\n");
-            exit(0);
+            parser_report_unexpected_token(parser, lexer, "E0202",
+                                          "Expected a parameter name");
+            parser_free_ast((ASTNode *)node);
+            return NULL;
+        }
+
+        if (node->parameter_count == node->parameter_capacity)
+        {
+            node->parameter_capacity *= 2;
+            node->params = realloc(node->params,
+                                   sizeof(char *) * node->parameter_capacity);
         }
         size_t length = strlen(parser->current_token->value);
         char *name = malloc(length + 1);
@@ -371,12 +465,23 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
 
         parser_advance_token(parser, lexer);
     }
+
+    if (parser->current_token->type == TOKEN_END)
+    {
+        parser_report_unexpected_token(parser, lexer, "E0202",
+                                      "Expected '>' after function parameters");
+        parser_free_ast((ASTNode *)node);
+        return NULL;
+    }
+
     parser_advance_token(parser, lexer);
 
     if (parser->current_token->type != TOKEN_LEFT_BRACE)
     {
-        printf("Esperava um inicio de bloco logo após a função\n");
-        exit(0);
+        parser_report_unexpected_token(parser, lexer, "E0202",
+                                      "Expected '{' before function body");
+        parser_free_ast((ASTNode *)node);
+        return NULL;
     }
     parser_advance_token(parser, lexer);
 
@@ -384,54 +489,115 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
     {
         if (parser->current_token->type == TOKEN_END)
         {
-            printf("Erro: bloco de função não foi fechado.\n");
+            parser_report_unexpected_token(parser, lexer, "E0202",
+                                          "Expected '}' before end of file");
+            parser_free_ast((ASTNode *)node);
             return NULL;
         }
 
+        size_t position_before_statement = parser->position;
         ASTNode *statement = parse_statement(parser, lexer);
-        if (statement == NULL)
-            return NULL;
-
-        node->body->statements[node->body->statement_count++] = statement;
-
-        parser_advance_token(parser, lexer);
+        if (statement != NULL)
+        {
+            if (node->body->statement_count == node->body->statement_capacity)
+            {
+                node->body->statement_capacity *= 2;
+                node->body->statements = realloc(
+                    node->body->statements,
+                    sizeof(ASTNode *) * node->body->statement_capacity);
+            }
+            node->body->statements[node->body->statement_count++] = statement;
+            parser_advance_token(parser, lexer);
+        }
+        else
+        {
+            if (parser->position == position_before_statement)
+                parser_advance_token(parser, lexer);
+            parser_synchronize(parser, lexer, 1);
+        }
     }
 
     return (ASTNode *)node;
 }
 
-void parser_init(Parser *parser)
+static int is_statement_start(TokenType type)
+{
+    switch (type)
+    {
+    case TOKEN_RESERVED_WORD_PUSH:
+    case TOKEN_RESERVED_WORD_POP:
+    case TOKEN_RESERVED_WORD_PRINT:
+    case TOKEN_RESERVED_WORD_ADD:
+    case TOKEN_RESERVED_WORD_SUB:
+    case TOKEN_RESERVED_WORD_MUL:
+    case TOKEN_RESERVED_WORD_DIV:
+    case TOKEN_RESERVED_WORD_MOD:
+    case TOKEN_RESERVED_WORD_FUNC:
+    case TOKEN_RESERVED_WORD_CALL_FUNC:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+static void parser_synchronize(Parser *parser, Lexer *lexer, int inside_block)
+{
+    while (parser->current_token->type != TOKEN_END)
+    {
+        if (is_statement_start(parser->current_token->type) ||
+            (inside_block && parser->current_token->type == TOKEN_RIGHT_BRACE))
+        {
+            return;
+        }
+
+        parser_advance_token(parser, lexer);
+    }
+}
+
+void parser_init(Parser *parser, DiagnosticList *diags)
 {
     parser->position = 0;
     parser->current_token = NULL;
+    parser->diags = diags;
 }
 
 ASTNode *parser_code(Parser *parser, Lexer *lexer)
 {
-    if (parser->current_token != NULL)
+    parser_advance_token(parser, lexer);
+
+    while (parser->current_token->type != TOKEN_END)
     {
-        lexer_free_token(parser->current_token);
-        parser->current_token = NULL;
+        if (!is_statement_start(parser->current_token->type))
+        {
+            if (parser->current_token->type == TOKEN_RIGHT_BRACE)
+            {
+                parser_report_unexpected_token(parser, lexer, "E0203",
+                                              "Unexpected '}' outside a function");
+            }
+            else
+            {
+                parser_report_unexpected_token(parser, lexer, "E0200",
+                                              "Expected a statement");
+            }
+
+            parser_synchronize(parser, lexer, 0);
+            continue;
+        }
+
+        size_t position_before_statement = parser->position;
+        ASTNode *node = parse_statement(parser, lexer);
+        if (node != NULL)
+            return node;
+
+        if (parser->position == position_before_statement)
+            parser_advance_token(parser, lexer);
+
+        parser_synchronize(parser, lexer, 0);
     }
 
-    parser->position = 0;
-    parser->current_token = lexer_next_token(lexer);
-
-    if (parser->current_token->type == TOKEN_END)
-    {
-        EndNode *node = malloc(sizeof(EndNode));
-        node->base.type = NODE_END;
-
-        return (ASTNode *)node;
-    }
-
-    ASTNode *node = parse_statement(parser, lexer);
-    if (node != NULL)
-    {
-        return node;
-    }
-
-    return parse_expression(parser, lexer, PREC_NONE);
+    EndNode *node = malloc(sizeof(EndNode));
+    node->base.type = NODE_END;
+    return (ASTNode *)node;
 }
 
 void parser_free_ast(ASTNode *node)
@@ -441,6 +607,12 @@ void parser_free_ast(ASTNode *node)
 
     switch (node->type)
     {
+    case NODE_INDENTIFIER:
+    {
+        IdentifierNode *identifier = (IdentifierNode *)node;
+        free(identifier->name);
+        break;
+    }
     case NODE_OP:
     {
         OpNode *op = (OpNode *)node;
@@ -458,6 +630,33 @@ void parser_free_ast(ASTNode *node)
     {
         PopNode *pop = (PopNode *)node;
         parser_free_ast(pop->expression);
+        break;
+    }
+    case NODE_CALL_FUNCTION:
+    {
+        CallFunctionNode *call = (CallFunctionNode *)node;
+        free(call->name);
+        for (size_t i = 0; i < call->argument_count; i++)
+            parser_free_ast(call->arguments[i]);
+        free(call->arguments);
+        break;
+    }
+    case NODE_FUNCTION:
+    {
+        FunctionNode *function = (FunctionNode *)node;
+        free(function->name);
+        for (size_t i = 0; i < function->parameter_count; i++)
+            free(function->params[i]);
+        free(function->params);
+        parser_free_ast((ASTNode *)function->body);
+        break;
+    }
+    case NODE_BLOCK:
+    {
+        BlockNode *block = (BlockNode *)node;
+        for (size_t i = 0; i < block->statement_count; i++)
+            parser_free_ast(block->statements[i]);
+        free(block->statements);
         break;
     }
     case NODE_NUMBER:

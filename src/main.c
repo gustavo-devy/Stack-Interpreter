@@ -66,18 +66,21 @@ int main(int argc, char const *argv[])
 
     Lexer lexer;
     lexer_init(&lexer, argv[1], input, diags);
-    // lexer_view_tokens(lexer);
 
     Parser parser;
-    parser_init(&parser);
+    parser_init(&parser, diags);
 
     ASTNode **program = NULL;
     size_t program_count = 0;
     size_t program_capacity = 0;
 
-    ASTNode *node = parser_code(&parser, &lexer);
-    while (node != NULL && node->type != NODE_END)
+    ASTNode *node = NULL;
+    while (1)
     {
+        node = parser_code(&parser, &lexer);
+        if (node == NULL)
+            break;
+
         if (program_count + 1 > program_capacity)
         {
             program_capacity = program_capacity < 8 ? 8 : program_capacity * 2;
@@ -85,18 +88,30 @@ int main(int argc, char const *argv[])
         }
 
         program[program_count++] = node;
-        node = parser_code(&parser, &lexer);
+
+        if (node->type == NODE_END)
+            break;
     }
 
-    if (node != NULL)
+    if (node == NULL || diags->count > 0)
     {
-        if (program_count + 1 > program_capacity)
+        for (size_t i = 0; i < diags->count; i++)
         {
-            program_capacity = program_capacity < 8 ? 8 : program_capacity * 2;
-            program = realloc(program, program_capacity * sizeof(ASTNode *));
+            diag_render(&diags->items[i], stderr);
         }
 
-        program[program_count++] = node;
+        for (size_t i = 0; i < program_count; i++)
+        {
+            parser_free_ast(program[i]);
+        }
+
+        if (parser.current_token != NULL)
+            lexer_free_token(parser.current_token);
+
+        free(program);
+        free(diags);
+        free(input);
+        return EXIT_FAILURE;
     }
 
     Chunk chunk;
@@ -109,8 +124,6 @@ int main(int argc, char const *argv[])
     {
         compile(&compiler, program[i], &chunk);
     }
-
-    // debug(chunk);
 
     VM vm;
     vm_init(&vm, &chunk, &compiler);
@@ -134,6 +147,7 @@ int main(int argc, char const *argv[])
 
     free(program);
     free(input);
+    free(diags);
 
     return EXIT_SUCCESS;
 }

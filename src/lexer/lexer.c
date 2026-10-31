@@ -1,9 +1,5 @@
 #include "lexer/lexer.h"
 
-// static SourceLocation loc_at(Lexer *lexer, size_t offset, size_t length)
-// {
-// }
-
 static void lexer_advance(Lexer *lexer)
 {
     if (lexer->current_char == '\n')
@@ -197,8 +193,16 @@ Token *lexer_next_token(Lexer *lexer)
         default:
             diag_emit(lexer->diags, SEV_ERROR, "E0002", lexer->location,
                       "invalid character '%c'", lexer->current_char);
-            diag_render(&lexer->diags->items[lexer->diags->count - 1], stderr);
-            exit(EXIT_FAILURE);
+
+            TokenLocation location;
+            location.start = lexer->position;
+            location.end = location.start + 1;
+            location.filename = lexer->location.filename;
+            location.column = lexer->location.column;
+            location.line = lexer->location.line;
+            lexer_advance(lexer);
+
+            return lexer_create_token(TOKEN_UNKNOWN, NULL, location);
         }
     }
 

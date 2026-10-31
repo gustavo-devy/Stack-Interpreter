@@ -12,6 +12,7 @@
 
 typedef enum TokenType
 {
+    TOKEN_UNKNOWN,
     TOKEN_IDENTIFIER,
     TOKEN_NUMBER,
     TOKEN_PLUS,
