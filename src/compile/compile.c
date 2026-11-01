@@ -45,6 +45,8 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
     if (node == NULL)
         return;
 
+    printf("NodeType: %d, location: %s:%zu:%zu\n", node->type, node->location.filename, node->location.line, node->location.column);
+
     switch (node->type)
     {
 
@@ -246,5 +248,6 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
 
     default:
         printf("Erro de compilação!");
+        exit(EXIT_FAILURE);
     }
 }

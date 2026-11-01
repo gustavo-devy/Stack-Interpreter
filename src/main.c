@@ -62,7 +62,7 @@ int main(int argc, char const *argv[])
     }
 
     DiagnosticList *diags = malloc(sizeof(DiagnosticList));
-    diags->count = 0;
+    diag_list_init(diags);
 
     Lexer lexer;
     lexer_init(&lexer, argv[1], input, diags);

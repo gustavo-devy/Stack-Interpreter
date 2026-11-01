@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "lexer/lexer.h"
+#include "error/error.h"
 #include "error/diagnostic.h"
 
 typedef enum NodeType
@@ -30,6 +31,7 @@ typedef enum NodeType
 typedef struct ASTNode
 {
     NodeType type;
+    SourceLocation location;
 } ASTNode;
 
 typedef struct EndNode

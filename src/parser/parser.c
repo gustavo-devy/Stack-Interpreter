@@ -60,21 +60,15 @@ static void parser_advance_token(Parser *parser, Lexer *lexer)
     parser->position++;
 }
 
-static NumberNode *create_number_node(int64_t value)
-{
-    NumberNode *node = malloc(sizeof(NumberNode));
-    node->base.type = NODE_NUMBER;
-    node->value = value;
-    return node;
-}
-
 static ASTNode *parse_number(Parser *parser, Lexer *lexer)
 {
-    (void)lexer;
+    NumberNode *node = malloc(sizeof(NumberNode));
 
-    Token *token = parser->current_token;
-    int64_t value = atoll(token->value);
-    return (ASTNode *)create_number_node(value);
+    node->base.type = NODE_NUMBER;
+    node->base.location = parser_token_location(lexer, parser->current_token);
+    node->value = atoll(parser->current_token->value);
+
+    return (ASTNode *)node;
 }
 
 static ParseRule *get_rule(TokenType type);
@@ -120,19 +114,22 @@ static ASTNode *parse_binary(Parser *parser, ASTNode *left, Lexer *lexer)
     }
 
     OpNode *node = malloc(sizeof(OpNode));
+
     node->base.type = NODE_OP;
     node->op = operator;
     node->left = left;
     node->right = right;
+    node->base.location = parser_token_location(lexer, parser->current_token);
+
     return (ASTNode *)node;
 }
 
 static ASTNode *parse_indentifier(Parser *parser, Lexer *lexer)
 {
-    (void)lexer;
-
     IdentifierNode *node = malloc(sizeof(*node));
+
     node->base.type = NODE_INDENTIFIER;
+    node->base.location = parser_token_location(lexer, parser->current_token);
 
     size_t length = strlen(parser->current_token->value) + 1;
     node->name = malloc(length);
@@ -211,72 +208,82 @@ static ASTNode *parse_push(Parser *parser, Lexer *lexer)
         return NULL;
 
     PushNode *node = malloc(sizeof(PushNode));
+
     node->base.type = NODE_PUSH;
+    node->base.location = parser_token_location(lexer, parser->current_token);
     node->expression = expression;
+
     return (ASTNode *)node;
 }
 
-static ASTNode *parse_pop(Parser *parser)
+static ASTNode *parse_pop(Parser *parser, Lexer *lexer)
 {
-    (void)parser;
-
     PopNode *node = malloc(sizeof(PopNode));
+
     node->base.type = NODE_POP;
+    node->base.location = parser_token_location(lexer, parser->current_token);
     node->expression = NULL;
+
     return (ASTNode *)node;
 }
 
-static void *parser_add(Parser *parser)
+static ASTNode *parser_add(Parser *parser, Lexer *lexer)
 {
-    (void)parser;
-
     AddNode *node = malloc(sizeof(AddNode));
+
     node->base.type = NODE_ADD;
+    node->base.location = parser_token_location(lexer, parser->current_token);
+
     return (ASTNode *)node;
 }
 
-static void *parser_sub(Parser *parser)
+static ASTNode *parser_sub(Parser *parser, Lexer *lexer)
 {
-    (void)parser;
-
     SubNode *node = malloc(sizeof(SubNode));
+
     node->base.type = NODE_SUB;
+    node->base.location = parser_token_location(lexer, parser->current_token);
+
     return (ASTNode *)node;
 }
 
-static void *parser_mul(Parser *parser)
+static ASTNode *parser_mul(Parser *parser, Lexer *lexer)
 {
-    (void)parser;
-
     MulNode *node = malloc(sizeof(MulNode));
+
     node->base.type = NODE_MUL;
+    node->base.location = parser_token_location(lexer, parser->current_token);
+
     return (ASTNode *)node;
 }
 
-static void *parser_div(Parser *parser)
+static ASTNode *parser_div(Parser *parser, Lexer *lexer)
 {
-    (void)parser;
-
     DivNode *node = malloc(sizeof(DivNode));
+
     node->base.type = NODE_DIV;
+    node->base.location = parser_token_location(lexer, parser->current_token);
+
     return (ASTNode *)node;
 }
 
-static void *parser_mod(Parser *parser)
+static ASTNode *parser_mod(Parser *parser, Lexer *lexer)
 {
-    (void)parser;
-
     ModNode *node = malloc(sizeof(ModNode));
+
     node->base.type = NODE_MOD;
+    node->base.location = parser_token_location(lexer, parser->current_token);
+
     return (ASTNode *)node;
 }
 
-static ASTNode *parser_print(Parser *parser)
+static ASTNode *parser_print(Parser *parser, Lexer *lexer)
 {
-    (void)parser;
-
     PrintNode *node = malloc(sizeof(PrintNode));
+
     node->base.type = NODE_PRINT;
+    node->base.location = parser_token_location(lexer, parser->current_token);
+
     return (ASTNode *)node;
 }
 
@@ -286,12 +293,14 @@ static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
     if (parser->current_token->type != TOKEN_IDENTIFIER)
     {
         parser_report_unexpected_token(parser, lexer, "E0201",
-                                      "Expected function name after 'call'");
+                                       "Expected function name after 'call'");
         return NULL;
     }
 
     CallFunctionNode *node = malloc(sizeof(CallFunctionNode));
+
     node->base.type = NODE_CALL_FUNCTION;
+    node->base.location = parser_token_location(lexer, parser->current_token);
     size_t name_length = strlen(parser->current_token->value) + 1;
     node->name = malloc(name_length);
     strcpy(node->name, parser->current_token->value);
@@ -304,7 +313,7 @@ static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
     if (parser->current_token->type != TOKEN_LEFT_ANGLE)
     {
         parser_report_unexpected_token(parser, lexer, "E0201",
-                                      "Expected '<' before function arguments");
+                                       "Expected '<' before function arguments");
         parser_free_ast((ASTNode *)node);
         return NULL;
     }
@@ -338,7 +347,7 @@ static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
             if (parser->current_token->type == TOKEN_RIGHT_ANGLE)
             {
                 parser_report_unexpected_token(parser, lexer, "E0201",
-                                              "Expected an argument after ','");
+                                               "Expected an argument after ','");
                 parser_free_ast((ASTNode *)node);
                 return NULL;
             }
@@ -347,7 +356,7 @@ static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
         }
 
         parser_report_unexpected_token(parser, lexer, "E0201",
-                                      "Expected ',' or '>' after function argument");
+                                       "Expected ',' or '>' after function argument");
         parser_free_ast((ASTNode *)node);
         return NULL;
     }
@@ -355,7 +364,7 @@ static ASTNode *parse_call_function(Parser *parser, Lexer *lexer)
     if (parser->current_token->type == TOKEN_END)
     {
         parser_report_unexpected_token(parser, lexer, "E0201",
-                                      "Expected '>' after function arguments");
+                                       "Expected '>' after function arguments");
         parser_free_ast((ASTNode *)node);
         return NULL;
     }
@@ -374,19 +383,19 @@ static ASTNode *parse_statement(Parser *parser, Lexer *lexer)
     case TOKEN_RESERVED_WORD_PUSH:
         return parse_push(parser, lexer);
     case TOKEN_RESERVED_WORD_POP:
-        return parse_pop(parser);
+        return parse_pop(parser, lexer);
     case TOKEN_RESERVED_WORD_PRINT:
-        return parser_print(parser);
+        return parser_print(parser, lexer);
     case TOKEN_RESERVED_WORD_ADD:
-        return parser_add(parser);
+        return parser_add(parser, lexer);
     case TOKEN_RESERVED_WORD_SUB:
-        return parser_sub(parser);
+        return parser_sub(parser, lexer);
     case TOKEN_RESERVED_WORD_MUL:
-        return parser_mul(parser);
+        return parser_mul(parser, lexer);
     case TOKEN_RESERVED_WORD_DIV:
-        return parser_div(parser);
+        return parser_div(parser, lexer);
     case TOKEN_RESERVED_WORD_MOD:
-        return parser_mod(parser);
+        return parser_mod(parser, lexer);
     case TOKEN_RESERVED_WORD_FUNC:
         return parse_function(parser, lexer);
     case TOKEN_RESERVED_WORD_CALL_FUNC:
@@ -401,14 +410,18 @@ static ASTNode *parse_statement(Parser *parser, Lexer *lexer)
 static ASTNode *parse_function(Parser *parser, Lexer *lexer)
 {
     FunctionNode *node = malloc(sizeof(FunctionNode));
+
     node->base.type = NODE_FUNCTION;
+    node->base.location = parser_token_location(lexer, parser->current_token);
     node->name = NULL;
     node->params = malloc(sizeof(char *) * 8);
     node->parameter_count = 0;
     node->parameter_capacity = 8;
 
     BlockNode *block = malloc(sizeof(BlockNode));
+
     block->base.type = NODE_BLOCK;
+    node->base.location = parser_token_location(lexer, parser->current_token);
     block->statement_capacity = 255;
     block->statement_count = 0;
     block->statements = malloc(sizeof(ASTNode *) * 255);
@@ -418,7 +431,7 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
     if (parser->current_token->type != TOKEN_IDENTIFIER)
     {
         parser_report_unexpected_token(parser, lexer, "E0202",
-                                      "Expected function name after 'func'");
+                                       "Expected function name after 'func'");
         parser_free_ast((ASTNode *)node);
         return NULL;
     }
@@ -429,7 +442,7 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
     if (parser->current_token->type != TOKEN_LEFT_ANGLE)
     {
         parser_report_unexpected_token(parser, lexer, "E0202",
-                                      "Expected '<' before function parameters");
+                                       "Expected '<' before function parameters");
         parser_free_ast((ASTNode *)node);
         return NULL;
     }
@@ -447,7 +460,7 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
         if (parser->current_token->type != TOKEN_IDENTIFIER)
         {
             parser_report_unexpected_token(parser, lexer, "E0202",
-                                          "Expected a parameter name");
+                                           "Expected a parameter name");
             parser_free_ast((ASTNode *)node);
             return NULL;
         }
@@ -469,7 +482,7 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
     if (parser->current_token->type == TOKEN_END)
     {
         parser_report_unexpected_token(parser, lexer, "E0202",
-                                      "Expected '>' after function parameters");
+                                       "Expected '>' after function parameters");
         parser_free_ast((ASTNode *)node);
         return NULL;
     }
@@ -479,7 +492,7 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
     if (parser->current_token->type != TOKEN_LEFT_BRACE)
     {
         parser_report_unexpected_token(parser, lexer, "E0202",
-                                      "Expected '{' before function body");
+                                       "Expected '{' before function body");
         parser_free_ast((ASTNode *)node);
         return NULL;
     }
@@ -490,7 +503,7 @@ static ASTNode *parse_function(Parser *parser, Lexer *lexer)
         if (parser->current_token->type == TOKEN_END)
         {
             parser_report_unexpected_token(parser, lexer, "E0202",
-                                          "Expected '}' before end of file");
+                                           "Expected '}' before end of file");
             parser_free_ast((ASTNode *)node);
             return NULL;
         }
@@ -572,12 +585,12 @@ ASTNode *parser_code(Parser *parser, Lexer *lexer)
             if (parser->current_token->type == TOKEN_RIGHT_BRACE)
             {
                 parser_report_unexpected_token(parser, lexer, "E0203",
-                                              "Unexpected '}' outside a function");
+                                               "Unexpected '}' outside a function");
             }
             else
             {
                 parser_report_unexpected_token(parser, lexer, "E0200",
-                                              "Expected a statement");
+                                               "Expected a statement");
             }
 
             parser_synchronize(parser, lexer, 0);
@@ -597,6 +610,7 @@ ASTNode *parser_code(Parser *parser, Lexer *lexer)
 
     EndNode *node = malloc(sizeof(EndNode));
     node->base.type = NODE_END;
+    node->base.location = parser_token_location(lexer, parser->current_token);
     return (ASTNode *)node;
 }
 
