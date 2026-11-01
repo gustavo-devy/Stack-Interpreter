@@ -1,7 +1,11 @@
+push 10
+push 2
+mul
+print
+
 func main<a, b>
 {
-    =
-    push a + )
+    push b
     print
 }
 

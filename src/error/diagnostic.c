@@ -37,11 +37,21 @@ static void render_line_context(const Diagnostic *d, FILE *out)
     fputc('\n', out);
 }
 
+void diag_list_init(DiagnosticList *list)
+{
+    list->items = malloc(DIAG_DEFAULT_CAPACITY * sizeof(Diagnostic));
+    list->count = 0;
+    list->capacity = DIAG_DEFAULT_CAPACITY;
+}
+
 void diag_emit(DiagnosticList *list, Severity sev, const char *code,
                SourceLocation location, const char *fmt, ...)
 {
-    if (list->count >= DIAG_MAX)
-        return;
+    if (list->count >= list->capacity)
+    {
+        list->capacity *= 2;
+        list->items = realloc(list->items, list->capacity * sizeof(Diagnostic));
+    }
 
     Diagnostic *d = &list->items[list->count++];
     d->severity = sev;

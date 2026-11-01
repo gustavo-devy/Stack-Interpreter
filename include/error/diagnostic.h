@@ -5,7 +5,7 @@
 
 #include "error.h"
 
-#define DIAG_MAX 64
+#define DIAG_DEFAULT_CAPACITY 64
 
 typedef enum Severity
 {
@@ -24,10 +24,12 @@ typedef struct Diagnostic
 
 typedef struct DiagnosticList
 {
-    Diagnostic items[DIAG_MAX];
+    Diagnostic *items;
     size_t count;
+    size_t capacity;
 } DiagnosticList;
 
+void diag_list_init(DiagnosticList *list);
 void diag_emit(DiagnosticList *list, Severity sev, const char *code,
                SourceLocation location, const char *fmt, ...);
 void diag_render(const Diagnostic *d, FILE *out);
