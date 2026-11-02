@@ -1,12 +1,17 @@
-push 10
-push 2
-mul
-print
-
-func main<a, b>
+func somar<x, y>
 {
-    push b
+    push x
+    push y
     print
 }
 
-call main<1, 9>
+func main<>
+{
+    call somar<4, 5>
+    push 2
+    push 4
+    mul
+    print
+}
+
+call main<>

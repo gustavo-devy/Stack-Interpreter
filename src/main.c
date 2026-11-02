@@ -93,6 +93,17 @@ int main(int argc, char const *argv[])
             break;
     }
 
+    Chunk chunk;
+    chunk_init(&chunk);
+
+    Compiler compiler;
+    compile_init(&compiler, &chunk);
+
+    for (size_t i = 0; i < program_count; i++)
+    {
+        compile(&compiler, program[i], &chunk, diags);
+    }
+
     if (node == NULL || diags->count > 0)
     {
         for (size_t i = 0; i < diags->count; i++)
@@ -112,17 +123,6 @@ int main(int argc, char const *argv[])
         free(diags);
         free(input);
         return EXIT_FAILURE;
-    }
-
-    Chunk chunk;
-    chunk_init(&chunk);
-
-    Compiler compiler;
-    compile_init(&compiler, &chunk);
-
-    for (size_t i = 0; i < program_count; i++)
-    {
-        compile(&compiler, program[i], &chunk);
     }
 
     VM vm;

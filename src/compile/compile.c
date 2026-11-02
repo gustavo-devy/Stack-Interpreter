@@ -40,12 +40,12 @@ void compile_init(Compiler *compiler, Chunk *main)
     compiler->current_function = NULL;
 }
 
-void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
+void compile(Compiler *compiler, ASTNode *node, Chunk *chunk, DiagnosticList *diags)
 {
     if (node == NULL)
         return;
 
-    printf("NodeType: %d, location: %s:%zu:%zu\n", node->type, node->location.filename, node->location.line, node->location.column);
+    // printf("NodeType: %d, location: %s:%zu:%zu\n", node->type, node->location.filename, node->location.line, node->location.column);
 
     switch (node->type)
     {
@@ -71,7 +71,7 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
 
         for (size_t i = 0; i < function_node->body->statement_count; i++)
         {
-            compile(compiler, function_node->body->statements[i], function_symbol->chunk);
+            compile(compiler, function_node->body->statements[i], function_symbol->chunk, diags);
         }
 
         emit_byte(function_symbol->chunk, OP_RETURN);
@@ -93,7 +93,7 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
 
         if (function_index == compiler->function_count)
         {
-            fprintf(stderr, "Função '%s' não declarada.\n", call_node->name);
+            diag_emit(diags, SEV_ERROR, "E300", call_node->base.location, "Function '%s' not declared", call_node->name);
             break;
         }
 
@@ -101,13 +101,13 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
 
         if (call_node->argument_count != function->parameter_count)
         {
-            fprintf(stderr, "Quantidade incorreta de argumentos para '%s'.\n", call_node->name);
+            diag_emit(diags, SEV_ERROR, "E301", call_node->base.location, "Incorrect number of arguments for function '%s'", call_node->name);
             break;
         }
 
         for (size_t i = 0; i < call_node->argument_count; i++)
         {
-            compile(compiler, call_node->arguments[i], chunk);
+            compile(compiler, call_node->arguments[i], chunk, diags);
         }
 
         emit_byte(chunk, OP_CALL_FUNCTION);
@@ -121,9 +121,7 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
 
         if (compiler->current_function == NULL)
         {
-            fprintf(stderr, "Parâmetro '%s' usado fora de uma função.\n",
-                    identifier->name);
-            exit(0);
+            diag_emit(diags, SEV_ERROR, "E302", identifier->base.location, "Parameter '%s' used outside of a function.", identifier->name);
             break;
         }
 
@@ -137,8 +135,7 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
 
         if (index == compiler->current_function->parameter_count)
         {
-            fprintf(stderr, "Parâmetro '%s' não declarado.\n", identifier->name);
-            exit(0);
+            diag_emit(diags, SEV_ERROR, "E303", identifier->base.location, "Parameter '%s' not declared in function '%s'.", identifier->name, compiler->current_function->name);
             break;
         }
 
@@ -161,8 +158,8 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
     {
         OpNode *o = (OpNode *)node;
 
-        compile(compiler, o->left, chunk);
-        compile(compiler, o->right, chunk);
+        compile(compiler, o->left, chunk, diags);
+        compile(compiler, o->right, chunk, diags);
 
         if (o->op == '+')
         {
@@ -189,11 +186,11 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
 
         if (p->expression == NULL)
         {
-            printf("Erro: push sem expressão.\n");
+            diag_emit(diags, SEV_ERROR, "E305", p->base.location, "push without expression.");
             break;
         }
 
-        compile(compiler, p->expression, chunk);
+        compile(compiler, p->expression, chunk, diags);
         emit_byte(chunk, OP_PUSH_CMD);
         break;
     }
@@ -247,7 +244,7 @@ void compile(Compiler *compiler, ASTNode *node, Chunk *chunk)
     }
 
     default:
-        printf("Erro de compilação!");
-        exit(EXIT_FAILURE);
+        diag_emit(diags, SEV_ERROR, "E304", node->location, "Unknown node type: %d", node->type);
+        break;
     }
 }

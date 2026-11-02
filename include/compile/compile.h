@@ -6,6 +6,8 @@
 #include <stdint.h>
 
 #include "parser/parser.h"
+#include "error/error.h"
+#include "error/diagnostic.h"
 
 typedef enum OpCode
 {
@@ -58,6 +60,6 @@ typedef struct Compiler
 
 void chunk_init(Chunk *chunk);
 void compile_init(Compiler *compiler, Chunk *main);
-void compile(Compiler *compiler, ASTNode *node, Chunk *chunk);
+void compile(Compiler *compiler, ASTNode *node, Chunk *chunk, DiagnosticList *diags);
 
 #endif // COMPILE_H
