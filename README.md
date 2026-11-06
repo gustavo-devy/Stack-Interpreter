@@ -1,20 +1,4 @@
-# Stack Interpreter
-
-A simple stack-based language created as a learning project to explore how a compiler works. The project implements stages such as lexical analysis, parsing, compilation to bytecode, and execution on a virtual machine.
-
-## Example
-
-```text
-push 10 + 2 * 4
-print
-```
-
-## Build and run
-
-This project uses CMake. From the repository root:
-
-```sh
-cmake -S . -B build
-cmake --build build
-./build/Stack-Interpreter src/source.txt
-```
+> [!NOTE]
+> **Project Status: Temporarily Paused**
+>
+> Development of this project is suspended indefinitely. The repository has been archived to prevent new issues or pull requests while the code is not being maintained. I intend to resume work on it in the future. Feel free to fork or clone the project!
